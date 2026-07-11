@@ -1575,29 +1575,30 @@ body.no-scroll { overflow: hidden; }
 }
 
 .landing-photo-title {
-  font-size: clamp(38px, 5.4vw, 74px);
-  font-weight: 800; line-height: 1.02; letter-spacing: -0.035em;
-  margin: 0 0 16px; max-width: 12ch;
+  font-size: clamp(46px, 6.6vw, 96px);
+  font-weight: 800; line-height: 1.0; letter-spacing: -0.035em;
+  margin: 0 0 22px; max-width: 12ch;
 }
 .landing-photo-title .accent { color: var(--series); }
 
 .landing-photo-sub {
-  font-size: clamp(15px, 1.35vw, 19px); line-height: 1.5;
-  color: var(--ink-2); max-width: 30ch; margin: 0 0 22px;
+  font-size: clamp(18px, 1.7vw, 25px); line-height: 1.45;
+  color: var(--ink-2); max-width: 32ch; margin: 0 0 30px;
 }
 
 .landing-features {
-  list-style: none; padding: 0; margin: 0 0 26px;
-  display: flex; flex-direction: column; gap: 11px;
+  list-style: none; padding: 0; margin: 0 0 34px;
+  display: flex; flex-direction: column; gap: 15px;
 }
 .landing-features li {
-  display: flex; align-items: center; gap: 12px;
-  font-size: 15px; color: var(--ink);
+  display: flex; align-items: center; gap: 14px;
+  font-size: 19px; color: var(--ink);
 }
+.landing-features li svg { width: 25px; height: 25px; flex-shrink: 0; }
 
 .landing-photo-cta {
-  display: inline-block; padding: 15px 30px; border-radius: 12px;
-  font-size: 16px; font-weight: 700; color: #fff;
+  display: inline-block; padding: 20px 42px; border-radius: 14px;
+  font-size: 20px; font-weight: 700; color: #fff;
   background: var(--series);
   box-shadow: 0 10px 34px rgba(57, 135, 229, 0.35);
   transition: transform 0.15s ease, box-shadow 0.2s ease;
@@ -1608,8 +1609,8 @@ body.no-scroll { overflow: hidden; }
 }
 
 .landing-privacy {
-  display: flex; align-items: center; gap: 8px;
-  margin-top: 14px; font-size: 13px; color: var(--ink-3);
+  display: flex; align-items: center; gap: 9px;
+  margin-top: 18px; font-size: 15px; color: var(--ink-3);
 }
 
 .landing-stats {
@@ -1628,9 +1629,12 @@ body.no-scroll { overflow: hidden; }
 }
 .landing-stat-label { font-size: 12px; color: var(--ink-3); margin-top: 3px; }
 
-@media (max-height: 780px) {
-  .landing-photo-title { font-size: clamp(34px, 4.4vw, 54px); margin-bottom: 12px; }
-  .landing-features { gap: 8px; margin-bottom: 20px; }
+@media (max-height: 820px) {
+  .landing-photo-title { font-size: clamp(40px, 5vw, 66px); margin-bottom: 14px; }
+  .landing-photo-sub { font-size: 19px; margin-bottom: 20px; }
+  .landing-features { gap: 10px; margin-bottom: 22px; }
+  .landing-features li { font-size: 17px; }
+  .landing-photo-cta { padding: 16px 34px; font-size: 18px; }
 }
 @media (max-width: 900px) {
   .landing-photo { background-position: 72% center; }
