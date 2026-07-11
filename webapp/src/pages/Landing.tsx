@@ -27,10 +27,6 @@ export default function Landing() {
             for teachers and for every student.
           </p>
 
-          <p className="landing-pain">
-            Teachers run 180 lessons a year and get feedback on almost none of them.
-          </p>
-
           <p className="landing-solution">
             ClassPulse delivers per-student engagement, attendance and personalized
             coaching after every class — so teachers know what to change tomorrow,
