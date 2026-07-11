@@ -1,50 +1,61 @@
 # ClassPulse — Project Status
 
-**Last updated:** 2026-07-10, evening (night before hackathon)
-**Hackathon:** Sat 2026-07-11, 9:00 AM check-in · build 11:20–5:00 PM · demo 5:00 PM
+**Last updated:** 2026-07-11, hackathon day (afternoon)
+**Live app:** https://classpulse.butterbase.dev · **Butterbase app:** `app_k03t6gua7dg1`
 
-## Where We Are
+## What works, end to end
 
-Planning is **complete**. No code written yet. Next action: execute the Phase 0 implementation plan.
+1. **Landing** (`/`) — fullscreen classroom hero, "Every lesson, understood.", CTA into the demo flow.
+2. **Lesson library** (`/upload`) — pick a recorded lesson (poster, classroom, date, roster size). One click starts it.
+3. **Processing run** — wheel animation over the real pipeline stages, each with tech pills
+   (Butterbase Storage/DB/AI Gateway · Ultralytics YOLO11m · InsightFace · FFmpeg · Gemini 2.5 Flash).
+4. **Lesson report** (`/lesson/:id`) — teaching pulse, class scores with timestamped evidence,
+   class pulse chart, auto attendance, per-student honeycomb, AI lesson notes.
+5. **Studio** (`/studio/:id`) — full lesson video on top; per-student cropped clips with a
+   scrubbable behavior timeline (listening / writing / speaking / phone / asleep / chatting /
+   looking away), events, score, summary, suggestion.
+6. **Trends** — cross-lesson insights per student and classroom.
 
-Done so far (all committed):
-1. ✅ Hackathon notes captured — `docs/notes/raw-draft-notes.md`, `docs/notes/seed-notes.md`
-2. ✅ Project named: **ClassPulse** — "the heartbeat of the classroom"
-3. ✅ Brainstorm complete, all decisions locked — `docs/notes/brainstorm-decisions.md`
-4. ✅ Design spec written and approved — `docs/superpowers/specs/2026-07-10-classpulse-design.md`
-5. ✅ Phase 0 implementation plan written (10 TDD tasks) — `docs/superpowers/plans/2026-07-10-phase0-pipeline-prototype.md`
+## Architecture
 
-## What ClassPulse Is (one breath)
+- **Pipeline** (`pipeline/`, Python, local): YOLO11m person detection + IoU tracker → tight
+  face+torso clips (ffmpeg) → InsightFace roster recognition (one-to-one greedy) → per-student
+  video analysis via the **Butterbase AI Gateway** (Gemini 2.5 Flash) → publish to Butterbase.
+- **Worker** (`worker/`, FastAPI, local): what the UI calls. Serves the video catalog
+  (`/videos`), poster frames, and `/process-library` (seeds classroom+roster, uploads,
+  runs the pipeline, reports progress). YOLO/ffmpeg/InsightFace can't run in a browser.
+- **Webapp** (`webapp/`, Vite + React): reads Butterbase directly; deployed to Butterbase.
+  With no worker reachable (the deployed app), the upload flow replays the stored analysis.
+- **Butterbase**: DB, storage, AI gateway, frontend hosting, submission.
 
-Admin/principal uploads recorded lessons → Python pipeline (YOLO tracking → per-student cropped clips → Gemini analysis) + Next.js dashboard on Butterbase → per-student engagement/distraction scores, face-matched attendance, class scores with timestamped evidence, AI lesson notes, EverOS-powered cross-lesson trends. Demo is pre-processed walkthrough only.
+## Run it
 
-## Next Action (resume here tomorrow)
+```bash
+# 1) worker (CV + AI)
+BUTTERBASE_API_KEY=bb_sk_… ./worker/run.sh
 
-**Execute the Phase 0 plan** — `docs/superpowers/plans/2026-07-10-phase0-pipeline-prototype.md`:
-prototype `video → tracked per-student clips → Gemini analysis JSON`, the riskiest unknown, BEFORE the event if possible.
+# 2) dashboard
+cd webapp && npm install && npm run dev     # http://localhost:5173
+```
 
-- Execution choice was pending: subagent-driven (recommended) vs inline. Tell Claude which.
-- Tasks 1–9 are self-contained TDD tasks; Task 10 verifies on real videos.
+`webapp/.env.local` (gitignored) needs `VITE_BUTTERBASE_API_KEY` and `VITE_WORKER_URL`.
 
-## Blockers / Needed From Us
+Pipeline alone, from the CLI:
+```bash
+.venv/bin/python -m pipeline classroom datasets/simulated/classroom1
+```
 
-| Item | Needed for | Status |
-|---|---|---|
-| `GEMINI_API_KEY` env var | Task 6 smoke test onward | ⬜ not set up |
-| 3 sample videos + rosters in `samples/<lesson>/video.mp4` + `roster/<Name>.jpg` | Task 10 verification | ⬜ user will provide (3 videos, different behaviors each) |
-| Butterbase account + promo `BUTTER0711` (Launch plan, dashboard.butterbase.ai/billing) | event day | ⬜ do tonight/morning — both teammates |
-| GitHub remote for this repo | 2-person collab on event day | ✅ git@github.com:mdemirst/classpulse.git — invite teammate as collaborator |
-| Staged demo clip (3–5 min, scripted moments) + found classroom clip + roster photos | event-day demo | ⬜ Phase 1 prep |
-| Discord: event credits (EverOS, Nebius) | event day | ⬜ |
+## Data
 
-## Team Split (event day)
+- `datasets/simulated/classroom1/` (tracked): `classroom.json` (roster + lectures),
+  cropped roster photos, lecture video. `datasets/catalog.json` is what the UI offers.
+- `datasets/real/` — local only. `work/` — temporary pipeline artifacts, gitignored.
+- Seeded classrooms (7-A Math, 6-B Science) provide cross-lesson trend history;
+  Social Studies — Period 3 is the real, pipeline-analyzed lesson.
 
-- **Person A:** Python pipeline (this Phase 0 work continues) — tracking, cropping, Gemini, stages 5–7 (STT, synthesis, publish)
-- **Person B:** Next.js dashboard on Butterbase — builds against seed fixtures; DB schema is the contract (see spec §Data Model)
+## Demo path
 
-## Key Files
+Landing → **See ClassPulse in action** → pick "Ancient Civilizations — Intro" →
+processing animation (~35s) → **See the insights** → lesson report → **Student videos** (Studio).
 
-- Spec (source of truth): `docs/superpowers/specs/2026-07-10-classpulse-design.md`
-- Phase 0 plan (execute next): `docs/superpowers/plans/2026-07-10-phase0-pipeline-prototype.md`
-- Decisions log: `docs/notes/brainstorm-decisions.md`
-- Event logistics/prizes: `docs/notes/seed-notes.md`
+Pitch script and privacy Q&A: `docs/notes/pitch.md`.
