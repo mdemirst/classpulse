@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
 function IconInsights() {
@@ -47,6 +48,12 @@ const STATS = [
 ];
 
 export default function Landing() {
+  // the hero owns the whole viewport — no page scroll behind it
+  useEffect(() => {
+    document.body.classList.add("no-scroll");
+    return () => document.body.classList.remove("no-scroll");
+  }, []);
+
   return (
     <div className="landing-photo">
       <div className="landing-photo-tint" aria-hidden />
@@ -77,15 +84,15 @@ export default function Landing() {
         <div className="landing-privacy">
           <IconShield /> Privacy-first. Videos are analyzed, never stored.
         </div>
+      </div>
 
-        <div className="landing-stats">
-          {STATS.map((s) => (
-            <div className="landing-stat" key={s.label}>
-              <div className="landing-stat-value" style={{ color: s.accent }}>{s.value}</div>
-              <div className="landing-stat-label">{s.label}</div>
-            </div>
-          ))}
-        </div>
+      <div className="landing-stats">
+        {STATS.map((s) => (
+          <div className="landing-stat" key={s.label}>
+            <div className="landing-stat-value" style={{ color: s.accent }}>{s.value}</div>
+            <div className="landing-stat-label">{s.label}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
