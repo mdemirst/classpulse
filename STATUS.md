@@ -33,7 +33,7 @@ prototype `video → tracked per-student clips → Gemini analysis JSON`, the ri
 | `GEMINI_API_KEY` env var | Task 6 smoke test onward | ⬜ not set up |
 | 3 sample videos + rosters in `samples/<lesson>/video.mp4` + `roster/<Name>.jpg` | Task 10 verification | ⬜ user will provide (3 videos, different behaviors each) |
 | Butterbase account + promo `BUTTER0711` (Launch plan, dashboard.butterbase.ai/billing) | event day | ⬜ do tonight/morning — both teammates |
-| GitHub remote for this repo | 2-person collab on event day | ⬜ not created |
+| GitHub remote for this repo | 2-person collab on event day | ✅ git@github.com:mdemirst/classpulse.git — invite teammate as collaborator |
 | Staged demo clip (3–5 min, scripted moments) + found classroom clip + roster photos | event-day demo | ⬜ Phase 1 prep |
 | Discord: event credits (EverOS, Nebius) | event day | ⬜ |
 
