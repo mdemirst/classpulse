@@ -1006,3 +1006,70 @@ button.hex-cell { cursor: pointer; }
   color: var(--ink-2); font-size: 13px; cursor: pointer; text-align: left;
 }
 .studio-event:hover { border-color: var(--serious); color: var(--ink); }
+
+/* ══ Processing run view (demo animation) ══ */
+.run-view { max-width: 720px; margin: 0 auto; padding-top: 12px; }
+.run-view h1 { margin-bottom: 4px; }
+
+.stages { margin-top: 28px; display: flex; flex-direction: column; gap: 4px; }
+
+.stage {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 14px 16px; border-radius: 12px;
+  border: 1px solid transparent;
+  transition: opacity 0.5s ease, background 0.5s ease, border-color 0.5s ease, transform 0.5s ease;
+}
+.stage.pending { opacity: 0.28; }
+.stage.active {
+  opacity: 1;
+  background: rgba(57, 135, 229, 0.1);
+  border-color: rgba(57, 135, 229, 0.45);
+  box-shadow: 0 0 28px rgba(57, 135, 229, 0.1);
+}
+.stage.done { opacity: 0.75; }
+.stage.final.done {
+  opacity: 1;
+  background: rgba(12, 163, 12, 0.12);
+  border-color: rgba(12, 163, 12, 0.5);
+}
+
+.stage-icon {
+  width: 22px; height: 22px; flex-shrink: 0; margin-top: 2px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; font-size: 12px; font-weight: 700;
+  border: 1px solid var(--border); color: var(--ink-3);
+}
+.stage.done .stage-icon { color: var(--good); border-color: var(--good); }
+.stage.active .stage-icon { border-color: var(--series); }
+.stage.final.done .stage-icon { color: var(--good); border-color: var(--good); }
+
+.stage-spin {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid rgba(57, 135, 229, 0.25);
+  border-top-color: var(--series);
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.stage-body { display: flex; flex-direction: column; gap: 3px; }
+.stage-label { font-weight: 600; font-size: 15px; }
+.stage.active .stage-label { color: var(--ink); }
+.stage-detail { font-size: 13px; color: var(--ink-3); }
+
+.stage-badge {
+  display: inline-flex; align-items: center; gap: 7px; margin-top: 6px;
+  padding: 4px 10px; border-radius: 999px; width: fit-content;
+  background: rgba(250, 178, 25, 0.1);
+  border: 1px solid rgba(250, 178, 25, 0.35);
+  font-size: 12px; color: var(--ink-2);
+}
+.stage-badge em {
+  font-style: normal; font-family: "IBM Plex Mono", monospace;
+  color: var(--ink); padding-left: 7px; margin-left: 1px;
+  border-left: 1px solid rgba(250, 178, 25, 0.35);
+}
+
+.run-actions {
+  display: flex; gap: 12px; margin-top: 28px; justify-content: center;
+  animation: hexFadeIn 0.5s ease both;
+}
