@@ -18,7 +18,6 @@ export default function App() {
         </Link>
         <nav className="nav">
           <NavLink to="/dashboard">Dashboard</NavLink>
-          <NavLink to="/upload">Upload</NavLink>
         </nav>
         <div className="tag">the heartbeat of the classroom</div>
       </div>

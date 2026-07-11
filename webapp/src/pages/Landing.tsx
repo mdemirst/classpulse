@@ -77,7 +77,7 @@ export default function Landing() {
           <li><IconOutcomes /> Better outcomes for every learner</li>
         </ul>
 
-        <Link to="/dashboard" className="landing-photo-cta">
+        <Link to="/upload" className="landing-photo-cta">
           See ClassPulse in action
         </Link>
 
