@@ -108,15 +108,9 @@ export function buildStages(fileName: string, sizeMb: number, students: number):
     },
     {
       key: "reports",
-      label: "Generating personalized reports",
-      detail: "Timestamped evidence, summary and a coaching suggestion per student",
+      label: "Generating reports and classroom pulse",
+      detail: "Per-student coaching reports · engagement, learning, efficiency and fun for the class",
       tech: [{ kind: "butter", name: "Butterbase AI Gateway", model: "Gemini 2.5 Flash" }],
-    },
-    {
-      key: "pulse",
-      label: "Generating classroom pulse",
-      detail: "Engagement · learning · efficiency · fun, aggregated across the class",
-      tech: [{ kind: "butter", name: "Butterbase DB" }],
     },
   ];
 }
@@ -124,21 +118,26 @@ export function buildStages(fileName: string, sizeMb: number, students: number):
 const FINAL: StageSpec = {
   key: "final",
   label: "Reports are generated.",
-  detail: "Every student has a clip, a behavior timeline and a personalized report.",
+  detail: "Every student has a behavior timeline and a personalized report.",
   tech: [],
 };
 
-const ITEM_H = 150;   // px — must match .wheel-item height in CSS
-const CENTER = 2;     // active row sits in the 3rd visible slot
+const ITEM_H = 150;    // px — must match .wheel-item height in CSS
+const FINAL_H = 260;   // px — must match .wheel-item.final height in CSS
+const CENTER = 2;      // active row sits in the 3rd visible slot
 
 interface Props {
   stages: StageSpec[];
   ready: boolean;
   dwellMs?: number;
   onFinished?: () => void;
+  /** rendered inside the final chain item (the CTA buttons) */
+  finalContent?: React.ReactNode;
 }
 
-export default function ProcessingStages({ stages, ready, dwellMs = 2200, onFinished }: Props) {
+export default function ProcessingStages({
+  stages, ready, dwellMs = 2200, onFinished, finalContent,
+}: Props) {
   const items = [...stages, FINAL];
   const finalIndex = items.length - 1;
   const [index, setIndex] = useState(0);
@@ -158,9 +157,12 @@ export default function ProcessingStages({ stages, ready, dwellMs = 2200, onFini
     }
   }, [index, finalIndex, announced, onFinished]);
 
+  // keep the (taller) final card visually centered in the wheel
+  const shift = (CENTER - index) * ITEM_H - (index === finalIndex ? (FINAL_H - ITEM_H) / 2 : 0);
+
   return (
     <div className="wheel" role="status" aria-live="polite">
-      <div className="wheel-track" style={{ transform: `translateY(${(CENTER - index) * ITEM_H}px)` }}>
+      <div className="wheel-track" style={{ transform: `translateY(${shift}px)` }}>
         {items.map((s, i) => {
           const offset = i - index;
           const state = offset === 0 ? "active" : offset < 0 ? "done" : "pending";
@@ -171,12 +173,13 @@ export default function ProcessingStages({ stages, ready, dwellMs = 2200, onFini
               key={s.key}
               style={{ "--dist": Math.min(Math.abs(offset), 3) } as React.CSSProperties}
             >
-              <span className="stage-icon">
-                {state === "done" || (isFinal && state === "active") ? "✓"
-                  : state === "active" ? <span className="stage-spin" />
-                  : ""}
-              </span>
+              {!isFinal && (
+                <span className="stage-icon">
+                  {state === "done" ? "✓" : state === "active" ? <span className="stage-spin" /> : ""}
+                </span>
+              )}
               <span className="stage-body">
+                {isFinal && <span className="final-check">✓</span>}
                 <span className="stage-label">{s.label}</span>
                 <span className="stage-detail">{s.detail}</span>
                 {s.tech.length > 0 && (
@@ -184,6 +187,7 @@ export default function ProcessingStages({ stages, ready, dwellMs = 2200, onFini
                     {s.tech.map((t) => <TechPill key={t.name + (t.model ?? "")} tech={t} />)}
                   </span>
                 )}
+                {isFinal && state === "active" && finalContent}
               </span>
             </div>
           );

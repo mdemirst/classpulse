@@ -70,14 +70,23 @@ export default function UploadPage() {
         <h1>{phase === "done" ? "Lesson analyzed" : "Analyzing lesson"}</h1>
         <div className="sub">{selected?.classroom_name} · {selected?.title}</div>
 
-        <ProcessingStages stages={stages} ready={workDone} onFinished={onFinished} />
+        <ProcessingStages
+          stages={stages}
+          ready={workDone}
+          onFinished={onFinished}
+          finalContent={
+            lessonId ? (
+              <span className="run-actions">
+                <Link className="btn-hero" to={`/lesson/${lessonId}`}>See the insights →</Link>
+                <span className="btn-hero-wrap">
+                  <Link className="btn-hero ghost" to={`/studio/${lessonId}`}>Student videos</Link>
+                  <span className="btn-caption">For debugging only — clips are never stored</span>
+                </span>
+              </span>
+            ) : null
+          }
+        />
 
-        {phase === "done" && lessonId && (
-          <div className="run-actions">
-            <Link className="btn-hero" to={`/lesson/${lessonId}`}>See the insights →</Link>
-            <Link className="btn-secondary" to={`/studio/${lessonId}`}>Student clips</Link>
-          </div>
-        )}
         {error && <div className="error inline">{error}</div>}
       </div>
     );
