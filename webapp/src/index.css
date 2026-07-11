@@ -197,8 +197,8 @@ button.hex-cell { cursor: pointer; }
   font-size: 16px; font-weight: 700; color: var(--ink-2);
 }
 .hex-center-name { font-size: 10px; color: var(--ink-3); margin-top: 2px; }
-.hex-mini-label { font-size: 8px; color: var(--ink-3); text-transform: uppercase; }
-.hex-mini-val { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 700; }
+.hex-mini-label { font-size: 10px; color: var(--ink-3); text-transform: uppercase; }
+.hex-mini-val { font-family: "IBM Plex Mono", monospace; font-size: 17px; font-weight: 700; }
 .student-hex-detail {
   width: 100%; max-width: 280px; margin-top: 8px;
   padding: 12px; background: var(--card); border: 1px solid var(--border);
@@ -437,8 +437,8 @@ button.hex-cell { cursor: pointer; }
 .teacher-pulse-header { margin-bottom: 16px; text-align: left; }
 .teacher-pulse-header .section-hex { margin-top: 0; }
 .teacher-pulse-cluster {
-  position: relative; width: 200px; height: 200px;
-  margin: 0 auto 12px;
+  position: relative; width: 280px; height: 280px;
+  margin: 0 auto 16px;
 }
 .teacher-pulse-cluster > .hex-cell {
   position: absolute; left: 50%; top: 50%;
@@ -450,11 +450,11 @@ button.hex-cell { cursor: pointer; }
 }
 .teacher-pulse-score {
   font-family: "IBM Plex Mono", monospace;
-  font-size: 28px; font-weight: 700;
+  font-size: 34px; font-weight: 700;
 }
-.teacher-pulse-score.large { font-size: 32px; }
+.teacher-pulse-score.large { font-size: 44px; }
 .teacher-pulse-score-label {
-  font-size: 9px; color: var(--ink-3);
+  font-size: 10px; color: var(--ink-3);
   text-transform: uppercase; letter-spacing: 0.06em;
 }
 .teacher-pulse-trend {

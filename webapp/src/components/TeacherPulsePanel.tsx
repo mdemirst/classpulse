@@ -19,7 +19,7 @@ export default function TeacherPulsePanel({ lesson, compact, scoreDelta, subtitl
     return (
       <div className="teacher-pulse-panel compact">
         <div className="teacher-pulse-compact-row">
-          <HexCell size={72} stroke={color} glow={score != null && score >= 75}>
+          <HexCell size={92} stroke={color} glow={score != null && score >= 75}>
             <span className="teacher-pulse-score" style={{ color }}>{score ?? "—"}</span>
           </HexCell>
           <div className="teacher-pulse-compact-text">
@@ -40,7 +40,7 @@ export default function TeacherPulsePanel({ lesson, compact, scoreDelta, subtitl
       </div>
       <div className="teacher-pulse-cluster">
         <div className="hex-satellite top">
-          <HexCell size={44} stroke={scoreColor(dimensionOf(lesson, "learning"))}>
+          <HexCell size={64} stroke={scoreColor(dimensionOf(lesson, "learning"))}>
             <span className="hex-mini-label">learn</span>
             <span className="hex-mini-val" style={{ color: scoreColor(dimensionOf(lesson, "learning")) }}>
               {dimensionOf(lesson, "learning") ?? "—"}
@@ -48,19 +48,19 @@ export default function TeacherPulsePanel({ lesson, compact, scoreDelta, subtitl
           </HexCell>
         </div>
         <div className="hex-satellite left">
-          <HexCell size={44} stroke={scoreColor(dimensionOf(lesson, "efficiency"))}>
+          <HexCell size={64} stroke={scoreColor(dimensionOf(lesson, "efficiency"))}>
             <span className="hex-mini-label">pace</span>
             <span className="hex-mini-val" style={{ color: scoreColor(dimensionOf(lesson, "efficiency")) }}>
               {dimensionOf(lesson, "efficiency") ?? "—"}
             </span>
           </HexCell>
         </div>
-        <HexCell size={88} stroke={color} glow={score != null && score >= 75}>
+        <HexCell size={124} stroke={color} glow={score != null && score >= 75}>
           <span className="teacher-pulse-score large" style={{ color }}>{score ?? "—"}</span>
           <span className="teacher-pulse-score-label">teaching</span>
         </HexCell>
         <div className="hex-satellite right">
-          <HexCell size={44} stroke={scoreColor(dimensionOf(lesson, "fun"))}>
+          <HexCell size={64} stroke={scoreColor(dimensionOf(lesson, "fun"))}>
             <span className="hex-mini-label">fun</span>
             <span className="hex-mini-val" style={{ color: scoreColor(dimensionOf(lesson, "fun")) }}>
               {dimensionOf(lesson, "fun") ?? "—"}
@@ -68,7 +68,7 @@ export default function TeacherPulsePanel({ lesson, compact, scoreDelta, subtitl
           </HexCell>
         </div>
         <div className="hex-satellite bottom">
-          <HexCell size={44} stroke={scoreColor(dimensionOf(lesson, "engagement"))}>
+          <HexCell size={64} stroke={scoreColor(dimensionOf(lesson, "engagement"))}>
             <span className="hex-mini-label">eng</span>
             <span className="hex-mini-val" style={{ color: scoreColor(dimensionOf(lesson, "engagement")) }}>
               {dimensionOf(lesson, "engagement") ?? "—"}
