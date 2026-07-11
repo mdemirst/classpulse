@@ -107,7 +107,7 @@ export default function UploadPage() {
 
         {phase === "done" && lessonId && (
           <div className="run-actions">
-            <Link className="btn-primary" to={`/lesson/${lessonId}`}>Go to the report →</Link>
+            <Link className="btn-hero" to={`/lesson/${lessonId}`}>See the insights →</Link>
             <Link className="btn-secondary" to={`/studio/${lessonId}`}>Student clips</Link>
           </div>
         )}

@@ -1,40 +1,123 @@
 import { useEffect, useState } from "react";
 
-/** Butterbase mark — shown on the stages that run through their AI gateway. */
-function ButterbaseMark() {
+/* ── Tech pills ── */
+
+type TechKind = "butter" | "vision" | "face" | "media";
+
+interface Tech {
+  kind: TechKind;
+  name: string;
+  /** monospace suffix after the divider, e.g. the model id */
+  model?: string;
+}
+
+function TechIcon({ kind }: { kind: TechKind }) {
+  if (kind === "butter") {
+    return (
+      <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden>
+        <rect x="1" y="4" width="14" height="9" rx="2" fill="#fab219" />
+        <path d="M1 6.5 L8 1.5 L15 6.5 Z" fill="#ffd77a" />
+      </svg>
+    );
+  }
+  if (kind === "vision") {
+    return (
+      <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden>
+        <rect x="2" y="2" width="12" height="12" rx="1.5" fill="none"
+          stroke="#3987e5" strokeWidth="1.6" strokeDasharray="3.5 2.2" />
+        <circle cx="8" cy="8" r="2" fill="#3987e5" />
+      </svg>
+    );
+  }
+  if (kind === "face") {
+    return (
+      <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden>
+        <circle cx="8" cy="8" r="6" fill="none" stroke="#199e70" strokeWidth="1.6" />
+        <circle cx="6" cy="7" r="1" fill="#199e70" />
+        <circle cx="10" cy="7" r="1" fill="#199e70" />
+        <path d="M5.5 10.5c1.6 1.3 3.4 1.3 5 0" fill="none"
+          stroke="#199e70" strokeWidth="1.4" strokeLinecap="round" />
+      </svg>
+    );
+  }
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden>
-      <rect x="1" y="4" width="14" height="9" rx="2" fill="#fab219" />
-      <path d="M1 6.5 L8 1.5 L15 6.5 Z" fill="#ffd77a" />
+      <rect x="1.5" y="3" width="13" height="10" rx="1.5" fill="none"
+        stroke="#9085e9" strokeWidth="1.5" />
+      <path d="M5 3v10M11 3v10" stroke="#9085e9" strokeWidth="1.2" />
     </svg>
   );
 }
+
+function TechPill({ tech }: { tech: Tech }) {
+  return (
+    <span className={`tech-pill ${tech.kind}`}>
+      <TechIcon kind={tech.kind} />
+      {tech.name}
+      {tech.model && <em>{tech.model}</em>}
+    </span>
+  );
+}
+
+/* ── Stages ── */
 
 export interface StageSpec {
   key: string;
   label: string;
   detail: string;
-  badge?: { model: string };
+  tech: Tech[];
 }
 
 export function buildStages(fileName: string, sizeMb: number, students: number): StageSpec[] {
   return [
-    { key: "upload", label: "Uploading video",
-      detail: `${fileName} · ${sizeMb.toFixed(1)} MB → Butterbase storage` },
-    { key: "roster", label: "Loading classroom roster",
-      detail: `${students} students · face embeddings prepared` },
-    { key: "clips", label: "Creating student clips",
-      detail: "YOLO detection + overlap tracking · cropping each student" },
-    { key: "recognize", label: "Recognizing students",
-      detail: "InsightFace embeddings matched against the roster" },
-    { key: "analyze", label: "Analyzing student behavior",
-      detail: "Engagement, distraction, phone, sleeping, chatting — per student",
-      badge: { model: "Gemini 2.5 Flash" } },
-    { key: "reports", label: "Generating personalized reports",
+    {
+      key: "upload",
+      label: "Uploading video",
+      detail: `${fileName} · ${sizeMb.toFixed(1)} MB`,
+      tech: [{ kind: "butter", name: "Butterbase Storage" }],
+    },
+    {
+      key: "roster",
+      label: "Loading classroom roster",
+      detail: `${students} students · reference photos embedded`,
+      tech: [
+        { kind: "butter", name: "Butterbase DB" },
+        { kind: "face", name: "InsightFace", model: "buffalo_l" },
+      ],
+    },
+    {
+      key: "clips",
+      label: "Creating student clips",
+      detail: "Every student detected, tracked and cropped to their own video",
+      tech: [
+        { kind: "vision", name: "Ultralytics", model: "YOLO11m" },
+        { kind: "media", name: "FFmpeg" },
+      ],
+    },
+    {
+      key: "recognize",
+      label: "Recognizing students",
+      detail: "Face embeddings matched one-to-one against the roster",
+      tech: [{ kind: "face", name: "InsightFace", model: "ArcFace 512-d" }],
+    },
+    {
+      key: "analyze",
+      label: "Analyzing student behavior",
+      detail: "Engagement, phone, sleeping, chatting, looking away — per student",
+      tech: [{ kind: "butter", name: "Butterbase AI Gateway", model: "Gemini 2.5 Flash" }],
+    },
+    {
+      key: "reports",
+      label: "Generating personalized reports",
       detail: "Timestamped evidence, summary and a coaching suggestion per student",
-      badge: { model: "Gemini 2.5 Flash" } },
-    { key: "pulse", label: "Generating classroom pulse",
-      detail: "Engagement · learning · efficiency · fun — aggregated across the class" },
+      tech: [{ kind: "butter", name: "Butterbase AI Gateway", model: "Gemini 2.5 Flash" }],
+    },
+    {
+      key: "pulse",
+      label: "Generating classroom pulse",
+      detail: "Engagement · learning · efficiency · fun, aggregated across the class",
+      tech: [{ kind: "butter", name: "Butterbase DB" }],
+    },
   ];
 }
 
@@ -42,28 +125,28 @@ const FINAL: StageSpec = {
   key: "final",
   label: "Reports are generated.",
   detail: "Every student has a clip, a behavior timeline and a personalized report.",
+  tech: [],
 };
 
-const ITEM_H = 118;   // px, must match .wheel-item height in CSS
+const ITEM_H = 150;   // px — must match .wheel-item height in CSS
 const CENTER = 2;     // active row sits in the 3rd visible slot
 
 interface Props {
   stages: StageSpec[];
-  /** gate the last step on the real work; true when there is nothing to wait for */
   ready: boolean;
   dwellMs?: number;
   onFinished?: () => void;
 }
 
-export default function ProcessingStages({ stages, ready, dwellMs = 2000, onFinished }: Props) {
+export default function ProcessingStages({ stages, ready, dwellMs = 2200, onFinished }: Props) {
   const items = [...stages, FINAL];
   const finalIndex = items.length - 1;
   const [index, setIndex] = useState(0);
   const [announced, setAnnounced] = useState(false);
 
   useEffect(() => {
-    if (index >= finalIndex) return;                       // final row is terminal
-    if (index === finalIndex - 1 && !ready) return;        // hold until work lands
+    if (index >= finalIndex) return;                   // final row is terminal
+    if (index === finalIndex - 1 && !ready) return;    // hold until the work lands
     const timer = setTimeout(() => setIndex((i) => i + 1), dwellMs);
     return () => clearTimeout(timer);
   }, [index, ready, finalIndex, dwellMs]);
@@ -77,14 +160,10 @@ export default function ProcessingStages({ stages, ready, dwellMs = 2000, onFini
 
   return (
     <div className="wheel" role="status" aria-live="polite">
-      <div
-        className="wheel-track"
-        style={{ transform: `translateY(${(CENTER - index) * ITEM_H}px)` }}
-      >
+      <div className="wheel-track" style={{ transform: `translateY(${(CENTER - index) * ITEM_H}px)` }}>
         {items.map((s, i) => {
           const offset = i - index;
-          const state =
-            offset === 0 ? "active" : offset < 0 ? "done" : "pending";
+          const state = offset === 0 ? "active" : offset < 0 ? "done" : "pending";
           const isFinal = i === finalIndex;
           return (
             <div
@@ -100,11 +179,9 @@ export default function ProcessingStages({ stages, ready, dwellMs = 2000, onFini
               <span className="stage-body">
                 <span className="stage-label">{s.label}</span>
                 <span className="stage-detail">{s.detail}</span>
-                {s.badge && (
-                  <span className="stage-badge">
-                    <ButterbaseMark />
-                    Butterbase AI Gateway
-                    <em>{s.badge.model}</em>
+                {s.tech.length > 0 && (
+                  <span className="tech-row">
+                    {s.tech.map((t) => <TechPill key={t.name + (t.model ?? "")} tech={t} />)}
                   </span>
                 )}
               </span>
