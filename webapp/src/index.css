@@ -886,23 +886,13 @@ button.hex-cell { cursor: pointer; }
   animation: blobDrift 12s ease-in-out infinite alternate;
 }
 .landing-blob.blob-1 {
-  width: 500px; height: 500px; top: -120px; left: -120px;
-  background: rgba(90, 160, 255, 0.35);
+  width: 560px; height: 560px; top: -140px; left: -140px;
+  background: rgba(57, 135, 229, 0.24);
 }
 .landing-blob.blob-2 {
-  width: 440px; height: 440px; top: 15%; right: -100px;
-  background: rgba(45, 212, 45, 0.28);
-  animation-delay: -4s;
-}
-.landing-blob.blob-3 {
-  width: 380px; height: 380px; bottom: 5%; left: 25%;
-  background: rgba(255, 208, 74, 0.25);
-  animation-delay: -8s;
-}
-.landing-blob.blob-4 {
-  width: 320px; height: 320px; bottom: 20%; right: 20%;
-  background: rgba(155, 123, 255, 0.22);
-  animation-delay: -2s;
+  width: 420px; height: 420px; bottom: 8%; right: -80px;
+  background: rgba(57, 135, 229, 0.14);
+  animation-delay: -6s;
 }
 @keyframes blobDrift {
   from { transform: translate(0, 0) scale(1); }
@@ -940,11 +930,7 @@ button.hex-cell { cursor: pointer; }
   line-height: 1.4; font-weight: 600; color: var(--ink);
   margin: 0 0 16px; max-width: 620px;
 }
-.landing-value b {
-  background: linear-gradient(135deg, #b3abf0, #9085e9);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text; font-weight: 800;
-}
+.landing-value b { color: var(--series); font-weight: 800; }
 .landing-pain {
   font-size: 16px; line-height: 1.55; color: var(--ink-3);
   margin: 0 0 14px; max-width: 600px;
@@ -979,24 +965,6 @@ button.hex-cell { cursor: pointer; }
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-.landing-slogan .grad-violet {
-  background: linear-gradient(135deg, #b3abf0, #9085e9);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.landing-title-vivid .grad-green {
-  background: linear-gradient(135deg, #2dbf2d, #0ca30c);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.landing-title-vivid .grad-amber {
-  background: linear-gradient(135deg, #fab219, #c98500);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
 
 .landing-keywords {
   display: flex; flex-wrap: wrap; gap: 8px;
@@ -1021,8 +989,8 @@ button.hex-cell { cursor: pointer; }
   box-shadow: 0 12px 36px rgba(90, 160, 255, 0.45);
 }
 .landing-cta.primary {
-  background: linear-gradient(135deg, #3987e5, #256abf, #9085e9);
-  color: white;
+  background: var(--series);
+  color: #fff;
 }
 
 .landing-hero-visual {
