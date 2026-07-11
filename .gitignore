@@ -1,0 +1,6 @@
+# Large local data — not tracked in git
+datasets/
+sample-videos/*.mp4
+
+# macOS
+.DS_Store
