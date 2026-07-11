@@ -95,7 +95,7 @@ def run_classroom(classroom_dir: Path, lecture: str | None, work_root: Path | No
     lectures = [l for l in meta["lectures"] if lecture is None or l["id"] == lecture]
     if not lectures:
         raise SystemExit(f"no lecture '{lecture}' in {classroom_dir / 'classroom.json'}")
-    work_root = work_root or Path("work") / meta["id"]
+    work_root = work_root or Path("work")
     for lec in lectures:
         print(f"=== {meta['id']} / {lec['id']} ===")
         run(video=classroom_dir / lec["video"], work_dir=work_root / lec["id"],
