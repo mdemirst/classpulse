@@ -106,6 +106,42 @@ export async function workerAlive(): Promise<boolean> {
   }
 }
 
+export interface LibraryVideo {
+  id: string;
+  title: string;
+  classroom_name: string;
+  date: string;
+  duration_sec: number;
+  resolution: string;
+  size_mb: number;
+  roster_size: number;
+  processed: boolean;
+  lesson_id: string | null;
+}
+
+export async function libraryVideos(): Promise<LibraryVideo[]> {
+  const r = await fetch(`${WORKER_URL}/videos`);
+  if (!r.ok) throw new Error(`worker videos: HTTP ${r.status}`);
+  return r.json();
+}
+
+export function libraryThumb(entryId: string): string {
+  return `${WORKER_URL}/videos/${entryId}/thumb.jpg`;
+}
+
+export async function processLibraryVideo(
+  entryId: string,
+  force = false
+): Promise<{ lesson_id: string; cached: boolean }> {
+  const r = await fetch(`${WORKER_URL}/process-library`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ entry_id: entryId, force }),
+  });
+  if (!r.ok) throw new Error(`worker: HTTP ${r.status}`);
+  return r.json();
+}
+
 export async function startProcessing(lessonId: string, force = false): Promise<void> {
   const r = await fetch(`${WORKER_URL}/process`, {
     method: "POST",

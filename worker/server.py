@@ -13,11 +13,13 @@ import traceback
 from pathlib import Path
 
 import requests
-from fastapi import BackgroundTasks, FastAPI
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from pipeline import db, storage
+from worker import catalog
 from pipeline.analyze import analyze_students
 from pipeline.cropper import crop_clip, save_thumbnail
 from pipeline.faces import load_roster_photos, recognize_tracks
@@ -43,6 +45,12 @@ def set_progress(lesson_id: str, stage: str, message: str, pct: int) -> None:
 
 class ProcessRequest(BaseModel):
     lesson_id: str
+    force: bool = False
+
+
+class LibraryRequest(BaseModel):
+    """Process a video from the on-disk library (no browser upload)."""
+    entry_id: str
     force: bool = False
 
 
@@ -124,3 +132,35 @@ def start(req: ProcessRequest, background: BackgroundTasks) -> dict:
 @app.get("/progress/{lesson_id}")
 def get_progress(lesson_id: str) -> dict:
     return progress.get(lesson_id, {"stage": "unknown", "message": "", "progress": 0})
+
+
+@app.get("/videos")
+def videos() -> list[dict]:
+    """Lesson videos available to analyze, with metadata for the picker."""
+    return catalog.listing()
+
+
+@app.get("/videos/{entry_id}/thumb.jpg")
+def video_thumb(entry_id: str) -> FileResponse:
+    try:
+        return FileResponse(catalog.thumbnail(entry_id), media_type="image/jpeg")
+    except KeyError:
+        raise HTTPException(404, "unknown video")
+
+
+@app.post("/process-library")
+def process_library(req: LibraryRequest, background: BackgroundTasks) -> dict:
+    """Analyze a library video: seeds the classroom/roster, uploads, runs the pipeline."""
+    try:
+        lesson_id, already = catalog.prepare_lesson(req.entry_id)
+    except KeyError:
+        raise HTTPException(404, "unknown video")
+
+    if already and not req.force:
+        return {"lesson_id": lesson_id, "cached": True}
+
+    if req.force:
+        shutil.rmtree(WORK_ROOT / lesson_id, ignore_errors=True)
+    set_progress(lesson_id, "queued", "Queued…", 0)
+    background.add_task(process_lesson, lesson_id)
+    return {"lesson_id": lesson_id, "cached": False}
