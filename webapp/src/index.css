@@ -935,8 +935,29 @@ button.hex-cell { cursor: pointer; }
   text-transform: lowercase;
 }
 
+.landing-value {
+  font-size: clamp(19px, 2.2vw, 24px);
+  line-height: 1.4; font-weight: 600; color: var(--ink);
+  margin: 0 0 16px; max-width: 620px;
+}
+.landing-value b {
+  background: linear-gradient(135deg, #c4a8ff, #9b7bff);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; font-weight: 800;
+}
+.landing-pain {
+  font-size: 16px; line-height: 1.55; color: var(--ink-3);
+  margin: 0 0 14px; max-width: 600px;
+  padding-left: 14px; border-left: 2px solid rgba(232, 93, 154, 0.5);
+}
+.landing-solution {
+  font-size: 16px; line-height: 1.55; color: var(--ink-2);
+  margin: 0 0 26px; max-width: 620px;
+}
+.landing-solution b { color: var(--ink); font-weight: 700; }
+
 .landing-tag {
-  font-size: clamp(20px, 3vw, 28px);
+  font-size: clamp(16px, 1.8vw, 20px);
   font-weight: 800; line-height: 1.2;
   margin: 0 0 28px; letter-spacing: -0.01em;
   text-transform: lowercase;
@@ -946,9 +967,9 @@ button.hex-cell { cursor: pointer; }
 .tag-deep { color: #9b7bff; }
 
 .landing-title-vivid {
-  font-size: clamp(52px, 9vw, 104px);
+  font-size: clamp(52px, 8.5vw, 96px);
   font-weight: 900; line-height: 0.92;
-  letter-spacing: -0.05em; margin: 0 0 20px;
+  letter-spacing: -0.05em; margin: 0 0 24px;
   text-transform: lowercase;
 }
 .landing-title-vivid .grad-blue,

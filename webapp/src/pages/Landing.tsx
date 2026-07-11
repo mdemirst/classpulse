@@ -17,24 +17,35 @@ export default function Landing() {
             <span>ClassPulse</span>
           </div>
 
-          <p className="landing-slogan">
-            <span className="grad-blue">intelligent</span>{" "}
-            <span className="grad-violet">AI</span>
-          </p>
-
           <h1 className="landing-title-vivid">
-            <span className="grad-green">teacher</span> &{" "}
-            <span className="grad-amber">student</span>
+            every <span className="grad-blue">lesson</span>,
             <br />
-            insights
+            <span className="grad-green">understood</span>.
           </h1>
 
+          <p className="landing-value">
+            Intelligent AI that turns each lesson into{" "}
+            <b>deep in-class insight</b> — for the teacher and for every student.
+          </p>
+
+          <p className="landing-pain">
+            Teachers teach 180 lessons a year and get feedback on almost none of them:
+            no signal on who was with them, who drifted, or which part of the lesson
+            actually worked.
+          </p>
+
+          <p className="landing-solution">
+            ClassPulse analyzes the class and returns <b>per-student engagement</b>,{" "}
+            <b>attendance</b>, and <b>personalized coaching</b> — so teachers know what
+            to change tomorrow, not next semester.
+          </p>
+
           <p className="landing-tag">
-            <span className="tag-realtime">real time</span>
+            <span className="tag-realtime">student insights</span>
             {" · "}
-            <span className="tag-inclass">in class</span>
+            <span className="tag-inclass">teacher coaching</span>
             {" · "}
-            <span className="tag-deep">deep insights</span>
+            <span className="tag-deep">every lesson</span>
           </p>
 
           <Link to="/dashboard" className="landing-cta primary">
