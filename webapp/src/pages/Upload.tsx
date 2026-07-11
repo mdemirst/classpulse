@@ -1,12 +1,28 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  fmtTime, libraryThumb, libraryVideos, processLibraryVideo, workerAlive, workerProgress,
+  fmtTime, libraryThumb, libraryVideos, processLibraryVideo, rows, workerAlive, workerProgress,
   type LibraryVideo,
 } from "../api";
 import ProcessingStages, { buildStages } from "../components/ProcessingStages";
+import type { Classroom, Lesson } from "../types";
 
 type Phase = "idle" | "running" | "done" | "error";
+
+/** Shown when no local worker is reachable (e.g. the deployed app): the same
+ *  lesson, replayed from the analysis already stored in Butterbase. */
+const DEMO_VIDEO: LibraryVideo = {
+  id: "social-studies-lecture1",
+  title: "Ancient Civilizations — Intro",
+  classroom_name: "Social Studies — Period 3",
+  date: "2026-07-11",
+  duration_sec: 25,
+  resolution: "1280×720",
+  size_mb: 11.8,
+  roster_size: 6,
+  processed: true,
+  lesson_id: null,
+};
 
 export default function UploadPage() {
   const [videos, setVideos] = useState<LibraryVideo[]>([]);
@@ -18,9 +34,25 @@ export default function UploadPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    workerAlive().then((ok) => {
+    workerAlive().then(async (ok) => {
       setWorker(ok);
-      if (ok) libraryVideos().then(setVideos).catch((e) => setError(String(e)));
+      if (ok) {
+        libraryVideos().then(setVideos).catch((e) => setError(String(e)));
+        return;
+      }
+      // No worker: offer the analyzed lesson straight from the database.
+      try {
+        const classrooms = await rows<Classroom>("classrooms");
+        const classroom = classrooms.find((c) => c.name === DEMO_VIDEO.classroom_name);
+        if (!classroom) return;
+        const lessons = await rows<Lesson>(
+          "lessons",
+          `classroom_id=eq.${classroom.id}&status=eq.done&order=created_at.desc`
+        );
+        if (lessons[0]) setVideos([{ ...DEMO_VIDEO, lesson_id: lessons[0].id }]);
+      } catch (e) {
+        setError(String(e));
+      }
     });
   }, []);
 
@@ -29,6 +61,14 @@ export default function UploadPage() {
     setError("");
     setWorkDone(false);
     setPhase("running");
+
+    // Without a worker we replay the stored analysis for this lesson.
+    if (!worker) {
+      setLessonId(video.lesson_id);
+      setWorkDone(true);
+      return;
+    }
+
     try {
       const { lesson_id, cached } = await processLibraryVideo(video.id);
       setLessonId(lesson_id);
@@ -101,20 +141,19 @@ export default function UploadPage() {
         and scores their engagement.
       </div>
 
-      {worker === false && (
-        <div className="notice warn">
-          Worker offline — start it with <code>BUTTERBASE_API_KEY=… ./worker/run.sh</code>, then reload.
-        </div>
-      )}
       {error && <div className="error inline">{error}</div>}
 
       <div className="video-grid">
         {videos.map((v) => (
           <button className="video-card" key={v.id} onClick={() => analyze(v)}>
             <div className="video-thumb">
-              <img src={libraryThumb(v.id)} alt="" loading="lazy" />
+              <img
+                src={worker ? libraryThumb(v.id) : "/lesson-poster.jpg"}
+                alt=""
+                loading="lazy"
+                onError={(e) => { e.currentTarget.src = "/lesson-poster.jpg"; }}
+              />
               <span className="video-duration">{fmtTime(v.duration_sec)}</span>
-              {v.processed && <span className="video-flag">analyzed</span>}
               <span className="video-play">▶</span>
             </div>
             <div className="video-body">
@@ -128,19 +167,13 @@ export default function UploadPage() {
                 <span>·</span>
                 <span>{v.size_mb} MB</span>
               </div>
-              <div className="video-roster">
-                {v.roster_size > 0
-                  ? `${v.roster_size} students on the roster`
-                  : "no roster — students stay anonymous"}
-              </div>
+              <div className="video-roster">{v.roster_size} students on the roster</div>
             </div>
           </button>
         ))}
       </div>
 
-      {worker && videos.length === 0 && !error && (
-        <div className="loading">Loading lesson library…</div>
-      )}
+      {videos.length === 0 && !error && <div className="loading">Loading lesson library…</div>}
     </>
   );
 }
