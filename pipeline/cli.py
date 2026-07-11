@@ -1,11 +1,13 @@
 import argparse
+import json
 from pathlib import Path
 
 from pipeline.cropper import crop_clip, save_thumbnail
 from pipeline.schemas import TracksFile
 from pipeline.tracking import detect_and_track, render_debug_video
 
-STAGES = ["track", "crop"]
+STAGES = ["track", "crop", "recognize"]
+DEFAULT_NAMES = "Sofia,Ben,Emma,Lucas,Kevin,Amara"
 
 
 def _load_tracks(work_dir: Path) -> TracksFile:
@@ -19,8 +21,9 @@ def _save_tracks(work_dir: Path, tracks: TracksFile) -> None:
 
 def run(video: Path, work_dir: Path, stage: str | None, model: str,
         conf: float, stride: int, min_track_sec: float,
-        pad: float, torso_frac: float) -> None:
-    stages = STAGES if stage is None else [stage]
+        pad: float, torso_frac: float,
+        roster: Path | None = None, names: str = DEFAULT_NAMES) -> None:
+    stages = (STAGES if roster else ["track", "crop"]) if stage is None else [stage]
 
     if "track" in stages:
         print(f"[track] {video} (model={model}, conf={conf}, stride={stride})")
@@ -43,6 +46,31 @@ def run(video: Path, work_dir: Path, stage: str | None, model: str,
         _save_tracks(work_dir, tracks)
         print(f"[crop] done: {len(tracks.tracks)} clips in {work_dir / 'clips'}")
 
+    if "recognize" in stages:
+        if roster is None:
+            raise SystemExit("recognize stage needs --roster <grid image>")
+        from pipeline.faces import build_roster, recognize_tracks  # heavy import
+
+        tracks = _load_tracks(work_dir)
+        name_list = [n.strip() for n in names.split(",") if n.strip()]
+        print(f"[recognize] roster {roster} -> {name_list}")
+        embeddings = build_roster(roster, name_list, work_dir / "roster")
+        matches = recognize_tracks(video, tracks, embeddings)
+        by_id = {m["track_id"]: m for m in matches}
+        for t in tracks.tracks:
+            m = by_id[t.track_id]
+            t.name, t.name_similarity = m["name"], m["similarity"]
+            if m["name"] and t.clip_path:
+                old = Path(t.clip_path)
+                new = old.with_name(f"track_{t.track_id}__{m['name']}.mp4")
+                if old.exists() and old != new:
+                    old.rename(new)
+                    t.clip_path = str(new)
+            print(f"[recognize] #{t.track_id}: {m['name'] or 'UNKNOWN'} (sim={m['similarity']})")
+        _save_tracks(work_dir, tracks)
+        (work_dir / "matches.json").write_text(json.dumps(matches, indent=2))
+        print(f"[recognize] matches -> {work_dir / 'matches.json'}")
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="pipeline")
@@ -58,7 +86,11 @@ def main() -> None:
     p.add_argument("--pad", type=float, default=0.05, help="crop padding fraction")
     p.add_argument("--torso-frac", type=float, default=0.7,
                    help="keep top fraction of person box (face+torso)")
+    p.add_argument("--roster", type=Path, default=None,
+                   help="roster grid image; enables the recognize stage")
+    p.add_argument("--names", default=DEFAULT_NAMES,
+                   help="comma-separated student names in roster reading order")
     args = parser.parse_args()
     run(video=args.video, work_dir=args.work, stage=args.stage, model=args.model,
         conf=args.conf, stride=args.stride, min_track_sec=args.min_track_sec,
-        pad=args.pad, torso_frac=args.torso_frac)
+        pad=args.pad, torso_frac=args.torso_frac, roster=args.roster, names=args.names)

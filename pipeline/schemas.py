@@ -15,6 +15,8 @@ class Track(BaseModel):
     crop: list[int] | None = None  # fixed crop window [x1, y1, x2, y2]
     clip_path: str | None = None
     thumbnail_path: str | None = None
+    name: str | None = None  # roster match
+    name_similarity: float | None = None
 
     @property
     def t_start(self) -> float:
