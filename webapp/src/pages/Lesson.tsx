@@ -5,6 +5,7 @@ import HexCell from "../components/HexCell";
 import HexRadar from "../components/HexRadar";
 import HoneycombGrid from "../components/HoneycombGrid";
 import PulseChart from "../components/PulseChart";
+import SectionDeck from "../components/SectionDeck";
 import StudentHexCard from "../components/StudentHexCard";
 import TeacherCoachingSection from "../components/TeacherCoachingSection";
 import TeacherPulsePanel from "../components/TeacherPulsePanel";
@@ -61,8 +62,10 @@ export default function LessonPage() {
     : null;
   const coachingCards = lessonCoachingCards(lesson, results, nameOf);
 
+  const absent = results.filter((r) => !r.present).length;
+
   return (
-    <>
+    <div className="lesson-deck">
       <div className="crumb">
         <Link to="/dashboard">← All classrooms</Link>
         {classroom && (
@@ -70,107 +73,133 @@ export default function LessonPage() {
         )}
       </div>
 
-      <div className="lesson-hero">
-        <div className="lesson-hero-text">
-          <h1>{lesson.title}</h1>
-          <div className="sub">
-            {classroom?.name} · {classroom?.teacher_name} ·{" "}
-            {new Date(lesson.lesson_date).toLocaleDateString(undefined, {
-              weekday: "long", month: "long", day: "numeric",
-            })}
-            {lesson.duration_sec ? ` · ${Math.round(lesson.duration_sec / 60)} min` : ""}
+      <SectionDeck>
+        {/* 1 — the lesson at a glance */}
+        <div className="lesson-hero">
+          <div className="lesson-hero-text">
+            <h1>{lesson.title}</h1>
+            <div className="sub">
+              {classroom?.name} · {classroom?.teacher_name} ·{" "}
+              {new Date(lesson.lesson_date).toLocaleDateString(undefined, {
+                weekday: "long", month: "long", day: "numeric",
+              })}
+              {lesson.duration_sec ? ` · ${Math.round(lesson.duration_sec / 60)} min` : ""}
+            </div>
+            <div className="deck-hint">Use ↑ ↓ to move through the report</div>
+          </div>
+          <div className="lesson-hero-radar card glass">
+            <HexRadar lesson={lesson} />
           </div>
         </div>
-        <div className="lesson-hero-radar card glass">
-          <HexRadar lesson={lesson} />
-        </div>
-      </div>
 
-      <section className="section-panel teacher-coaching-block">
-        <TeacherPulsePanel
-          lesson={lesson}
-          scoreDelta={scoreDelta}
-          subtitle={`Coaching for ${classroom?.teacher_name ?? "you"} — this lesson`}
-        />
-        <TeacherCoachingSection
-          cards={coachingCards}
-          teacherName={classroom?.teacher_name}
-          description="Strengths to keep, gaps to address, and student-specific actions"
-        />
-      </section>
-
-      {timeline.length > 0 && (
-        <section className="section-panel">
-          <h2 className="section-hex">Class pulse</h2>
-          <PulseChart
-            data={timeline}
-            highlights={highlights}
-            distractions={allDistractions}
+        {/* 2 — coaching for the teacher */}
+        <div className="section-panel teacher-coaching-block">
+          <TeacherPulsePanel
+            lesson={lesson}
+            scoreDelta={scoreDelta}
+            subtitle={`Coaching for ${classroom?.teacher_name ?? "you"} — this lesson`}
           />
-          <div className="chart-legend">
-            <span><i className="dot series" /> Engagement</span>
-            <span><i className="dot highlight" /> Highlights</span>
-            <span><i className="dot distraction" /> Distractions</span>
-          </div>
-          {highlights.length > 0 && (
-            <div className="sub" style={{ marginTop: 8 }}>
-              {highlights.map((h, i) => (
-                <div key={i}>● {fmtTime(h.t)} — {h.note}</div>
-              ))}
-            </div>
-          )}
-          <h3 className="section-sub">Distraction density</h3>
-          <DistractionTimeline events={allDistractions} duration={duration} height={14} />
-        </section>
-      )}
+          <TeacherCoachingSection
+            cards={coachingCards}
+            teacherName={classroom?.teacher_name}
+            description="Strengths to keep, gaps to address, and student-specific actions"
+          />
+        </div>
 
-      <h2 className="section-hex">Attendance ({present.length}/{results.length || students.length})</h2>
-      <div className="attendance-hex-row">
-        {results.map((r) => {
-          const name = nameOf(r.student_id);
-          return (
-            <div className="attendance-hex" key={r.id} title={name}>
-              <HexCell
-                size={52}
-                stroke={r.present ? "var(--good)" : "var(--border)"}
-                fill={r.present ? "rgba(12,163,12,0.08)" : "var(--card)"}
-              >
-                <span className="attendance-hex-init">{initials(name)}</span>
-              </HexCell>
-              <span className="attendance-hex-name">{name.split(" ")[0]}</span>
+        {/* 3 — the pulse of the lesson */}
+        {timeline.length > 0 && (
+          <div className="section-panel">
+            <h2 className="section-hex">Class pulse</h2>
+            <div className="sub section-desc">
+              Engagement across the lesson — where you had them, and where you lost them
             </div>
-          );
-        })}
-      </div>
-
-      <h2 className="section-hex">Students</h2>
-      <div className="sub section-desc">Needs attention first — click a hex to expand</div>
-      <HoneycombGrid>
-        {sortedResults.map((r, i) => (
-          <div key={r.id} className="honeycomb-item" style={{ animationDelay: `${i * 40}ms` }}>
-            <StudentHexCard
-              result={r}
-              student={students.find((s) => s.id === r.student_id)}
-              duration={duration}
-              highlight={(r.engagement_score ?? 100) < 55}
-              reportCardHref={
-                classroom && r.student_id
-                  ? `/classroom/${classroom.id}/student/${r.student_id}`
-                  : undefined
-              }
+            <PulseChart
+              data={timeline}
+              highlights={highlights}
+              distractions={allDistractions}
             />
+            <div className="chart-legend">
+              <span><i className="dot series" /> Engagement</span>
+              <span><i className="dot highlight" /> Highlights</span>
+              <span><i className="dot distraction" /> Distractions</span>
+            </div>
+            {highlights.length > 0 && (
+              <div className="sub" style={{ marginTop: 8 }}>
+                {highlights.map((h, i) => (
+                  <div key={i}>● {fmtTime(h.t)} — {h.note}</div>
+                ))}
+              </div>
+            )}
+            <h3 className="section-sub">Distraction density</h3>
+            <DistractionTimeline events={allDistractions} duration={duration} height={14} />
           </div>
-        ))}
-      </HoneycombGrid>
+        )}
 
-      {lesson.notes_md && (
-        <section className="section-panel">
-          <h2 className="section-hex">Lesson notes</h2>
-          <div className="notes">{lesson.notes_md.replace(/^#+\s*/gm, "").replace(/\*\*/g, "")}</div>
-        </section>
-      )}
+        {/* 4 — attendance took itself */}
+        <div className="attendance-section">
+          <h2 className="section-hex">Attendance</h2>
+          <div className="sub section-desc">
+            Taken automatically — every face matched against the class roster
+          </div>
+          <div className="attendance-count">
+            <span className="attendance-present">{present.length}</span>
+            <span className="attendance-of">/ {results.length || students.length} present</span>
+            {absent > 0 && <span className="attendance-absent">{absent} absent</span>}
+          </div>
+          <div className="attendance-hex-row big">
+            {results.map((r) => {
+              const name = nameOf(r.student_id);
+              return (
+                <div className="attendance-hex" key={r.id} title={name}>
+                  <HexCell
+                    size={84}
+                    stroke={r.present ? "var(--good)" : "var(--border)"}
+                    fill={r.present ? "rgba(12,163,12,0.08)" : "var(--card)"}
+                  >
+                    <span className="attendance-hex-init">{initials(name)}</span>
+                  </HexCell>
+                  <span className="attendance-hex-name">{name.split(" ")[0]}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
-      <TranscriptPanel transcript={lesson.transcript} />
-    </>
+        {/* 5 — the students */}
+        <div className="students-section">
+          <h2 className="section-hex">Students</h2>
+          <div className="sub section-desc">
+            Needs attention first — click a hex to expand
+          </div>
+          <HoneycombGrid>
+            {sortedResults.map((r, i) => (
+              <div key={r.id} className="honeycomb-item" style={{ animationDelay: `${i * 40}ms` }}>
+                <StudentHexCard
+                  result={r}
+                  student={students.find((s) => s.id === r.student_id)}
+                  duration={duration}
+                  highlight={(r.engagement_score ?? 100) < 55}
+                  reportCardHref={
+                    classroom && r.student_id
+                      ? `/classroom/${classroom.id}/student/${r.student_id}`
+                      : undefined
+                  }
+                />
+              </div>
+            ))}
+          </HoneycombGrid>
+        </div>
+
+        {/* 6 — notes the lesson wrote itself */}
+        {lesson.notes_md && (
+          <div className="section-panel">
+            <h2 className="section-hex">Lesson notes</h2>
+            <div className="sub section-desc">Written by ClassPulse from what it saw and heard</div>
+            <div className="notes">{lesson.notes_md.replace(/^#+\s*/gm, "").replace(/\*\*/g, "")}</div>
+            <TranscriptPanel transcript={lesson.transcript} />
+          </div>
+        )}
+      </SectionDeck>
+    </div>
   );
 }
