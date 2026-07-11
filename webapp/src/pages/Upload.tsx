@@ -12,8 +12,6 @@ export default function UploadPage() {
   const navigate = useNavigate();
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [classroomId, setClassroomId] = useState("");
-  const [title, setTitle] = useState("");
-  const [lessonDate, setLessonDate] = useState(new Date().toISOString().slice(0, 10));
   const [file, setFile] = useState<File | null>(null);
   const [hash, setHash] = useState<string | null>(null);
   const [cached, setCached] = useState<Lesson | null>(null);
@@ -61,7 +59,6 @@ export default function UploadPage() {
     setError("");
     setPhase("hashing");
     setMessage("Checking whether this video was already processed…");
-    if (!title) setTitle(f.name.replace(/\.[^.]+$/, ""));
     try {
       const h = await hashFile(f);
       setHash(h);
@@ -80,7 +77,7 @@ export default function UploadPage() {
   }
 
   async function process(force: boolean) {
-    if (!file || !classroomId || !title) return;
+    if (!file || !classroomId) return;
     setError("");
     setPhase("uploading");
     setPct(5);
@@ -91,8 +88,8 @@ export default function UploadPage() {
         const objectId = await uploadFile(file);
         const lesson = await insertRow<Lesson>("lessons", {
           classroom_id: classroomId,
-          title,
-          lesson_date: lessonDate,
+          title: file.name.replace(/\.[^.]+$/, ""),
+          lesson_date: new Date().toISOString().slice(0, 10),
           status: "uploaded",
           video_object_id: objectId,
           source_hash: hash,
@@ -123,7 +120,7 @@ export default function UploadPage() {
   }
 
   const busy = phase === "uploading" || phase === "processing" || phase === "hashing";
-  const ready = file && classroomId && title && hasUploadAuth() && worker;
+  const ready = file && classroomId && hasUploadAuth() && worker;
 
   return (
     <>
@@ -188,17 +185,6 @@ export default function UploadPage() {
             ))}
           </select>
           <span className="sub">The classroom's roster is used to name each student.</span>
-        </label>
-
-        <label>
-          Lesson title
-          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)}
-            placeholder="Fractions: Adding & Subtracting" required />
-        </label>
-
-        <label>
-          Date
-          <input type="date" value={lessonDate} onChange={(e) => setLessonDate(e.target.value)} required />
         </label>
 
         {phase === "cached" && cached ? (
