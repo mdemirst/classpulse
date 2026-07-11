@@ -62,9 +62,23 @@ class DistractionEvent(BaseModel):
     note: str
 
 
+STATE_KINDS = ["listening", "writing", "speaking", "looking_away",
+               "chatting", "phone", "asleep", "other"]
+
+
+class StateSegment(BaseModel):
+    """A contiguous stretch of one observable behavior (drives the UI timeline)."""
+    t_start: float
+    t_end: float
+    state: Literal["listening", "writing", "speaking", "looking_away",
+                   "chatting", "phone", "asleep", "other"]
+    note: str = ""
+
+
 class StudentAnalysis(BaseModel):
     engagement_score: int = Field(ge=0, le=100)
     engagement_timeline: list[TimelinePoint]
+    states: list[StateSegment] = []
     distraction_events: list[DistractionEvent]
     evidence: list[Evidence]
     summary: str

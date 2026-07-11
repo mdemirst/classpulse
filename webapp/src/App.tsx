@@ -4,6 +4,7 @@ import ClassroomPage from "./pages/Classroom";
 import LessonPage from "./pages/Lesson";
 import UploadPage from "./pages/Upload";
 import StudentReport from "./pages/StudentReport";
+import Studio from "./pages/Studio";
 
 function HexLogo() {
   return (
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/classroom/:classroomId/student/:studentId" element={<StudentReport />} />
           <Route path="/classroom/:id" element={<ClassroomPage />} />
           <Route path="/lesson/:id" element={<LessonPage />} />
+          <Route path="/studio/:id" element={<Studio />} />
           <Route path="/upload" element={<UploadPage />} />
         </Routes>
       </div>

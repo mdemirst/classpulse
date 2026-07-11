@@ -90,7 +90,7 @@ def video_info(video_path: Path) -> tuple[float, int, int]:
 
 def detect_and_track(
     video_path: Path,
-    model_name: str = "yolo11n.pt",
+    model_name: str = "yolo11m.pt",
     conf: float = 0.3,
     stride: int = 2,
     min_track_sec: float = 2.0,

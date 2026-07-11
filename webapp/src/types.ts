@@ -17,6 +17,17 @@ export interface ClassScore { dimension: string; score: number; evidence: Eviden
 export interface TimelinePoint { t: number; score: number }
 export interface DistractionEvent { t_start: number; t_end: number; kind: string; note: string }
 
+export type StateKind =
+  | "listening" | "writing" | "speaking" | "looking_away"
+  | "chatting" | "phone" | "asleep" | "other";
+
+export interface StateSegment {
+  t_start: number;
+  t_end: number;
+  state: StateKind;
+  note: string;
+}
+
 // Butterbase jsonb columns store arrays wrapped as {items: [...]}
 export interface Items<T> { items: T[] }
 
@@ -27,6 +38,9 @@ export interface Lesson {
   lesson_date: string;
   duration_sec: number | null;
   status: string;
+  source_hash?: string | null;
+  video_object_id?: string | null;
+  error?: string | null;
   class_scores: Items<ClassScore> | null;
   engagement_timeline: Items<TimelinePoint> | null;
   notes_md: string | null;
@@ -48,6 +62,10 @@ export interface StudentResult {
   thumbnail_object_id: string | null;
   summary: string | null;
   suggestion: string | null;
+  // written by the pipeline; absent on locally-synthesized rows
+  states?: Items<StateSegment> | null;
+  clip_start_sec?: number | null;
+  clip_duration_sec?: number | null;
 }
 
 export interface Insight {

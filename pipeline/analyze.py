@@ -15,6 +15,10 @@ the START OF THIS CLIP. Be specific and honest — if the student is attentive, 
 Return:
 - engagement_score: 0-100 overall for the clip
 - engagement_timeline: one score roughly every 5 seconds
+- states: CONTIGUOUS, NON-OVERLAPPING segments covering the WHOLE clip from t=0 to the
+  end, each labeled with what the student is doing:
+  listening | writing | speaking | looking_away | chatting | phone | asleep | other.
+  Merge adjacent identical states; do not leave gaps.
 - distraction_events: only clearly visible ones, kind is one of
   phone | asleep | chatting | looking_away | other, with t_start/t_end and a short note
 - evidence: 2-5 timestamped observations that justify your scores
