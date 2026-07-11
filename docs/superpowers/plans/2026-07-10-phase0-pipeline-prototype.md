@@ -13,7 +13,8 @@
 - Repo root: `/Users/mahmutdemir/repos/classpulse`. All paths below are relative to it.
 - Virtualenv at `.venv/`; activate with `source .venv/bin/activate` before every command.
 - `ffmpeg` must be on PATH (`brew install ffmpeg` if missing).
-- Gemini auth: env var `GEMINI_API_KEY`. Model name: env var `GEMINI_MODEL`, default `gemini-2.5-flash` (user will experiment with models later — never hardcode elsewhere).
+- **Model calls go through the Butterbase AI gateway by default** (spec revision 2026-07-11). Env vars: `BUTTERBASE_API_KEY`, `BUTTERBASE_APP_ID`, `BUTTERBASE_API_URL` (default `https://api.butterbase.ai`), `CLASSPULSE_MODEL` (a vision model id from the Butterbase catalog, e.g. a `google/gemini-*` — check `GET /v1/public/models`), `CLASSPULSE_PROVIDER` (`butterbase` default | `gemini` fallback). Gemini fallback uses `GEMINI_API_KEY` + `GEMINI_MODEL`. Never hardcode model names outside these env defaults.
+- The Butterbase app must exist before Task 6's smoke test (created via `init_app` MCP tool; raise storage limits via `manage_storage update_config` — default is 10 MB/file which clips fit but lesson videos may not).
 - Sample layout (user provides): `samples/<lesson>/video.mp4` + `samples/<lesson>/roster/<StudentName>.jpg`. `samples/` and `work/` are gitignored.
 - This is a prototype (spike): TDD the pure logic (schemas, box math, track collection, artifact orchestration) with mocked model/tracker; do NOT write tests that call Gemini or run real YOLO inference. Real videos are the manual verification (Task 10).
 - Timestamps are always seconds-from-start (float), matching the design spec.
@@ -30,15 +31,18 @@ pipeline/
   boxes.py          # pure bbox math: smoothing, expansion, crop window
   tracking.py       # YOLO wrapper + pure collect_tracks()
   cropper.py        # ffmpeg clip cropping + cv2 thumbnails
-  gemini.py         # GeminiClient: upload video/images -> schema-validated JSON
-  roster.py         # roster loading + track->name matching via Gemini
-  analyze.py        # per-student engagement analysis via Gemini (parallel)
+  storage.py        # Butterbase Storage: presigned upload/download helpers
+  provider.py       # ButterbaseProvider (AI gateway, primary) + get_provider() switch
+  gemini.py         # GeminiClient: direct-Gemini fallback (same interface)
+  roster.py         # roster loading + track->name matching via provider
+  analyze.py        # per-student engagement analysis via provider (parallel)
 tests/
   conftest.py       # synthetic test video fixture
   test_schemas.py
   test_boxes.py
   test_tracking.py
   test_cropper.py
+  test_provider.py
   test_gemini.py
   test_roster.py
   test_analyze.py
@@ -65,6 +69,7 @@ opencv-python>=4.10
 google-genai>=1.20
 pydantic>=2.7
 pytest>=8.0
+requests>=2.31
 ```
 
 - [ ] **Step 2: Create .gitignore**
@@ -274,6 +279,7 @@ class StudentAnalysis(BaseModel):
     distraction_events: list[DistractionEvent]
     evidence: list[Evidence]
     summary: str
+    suggestion: str = ""  # one actionable coaching suggestion for the teacher
 ```
 
 - [ ] **Step 4: Run to verify pass**
@@ -663,7 +669,295 @@ git commit -m "feat: per-student clip cropping and thumbnails"
 
 ---
 
-### Task 6: Gemini client (gemini.py)
+### Task 6: Butterbase provider (storage.py + provider.py)
+
+**Files:**
+- Create: `pipeline/storage.py`, `pipeline/provider.py`
+- Test: `tests/test_provider.py`
+
+**Interfaces:**
+- Consumes: pydantic models from `pipeline.schemas` (as `schema` args); env vars from Global Constraints
+- Produces (the provider interface — Task 6b's GeminiClient implements the SAME three methods):
+  - `storage.upload_file(path: Path) -> str` (objectId), `storage.download_url(object_id: str) -> str`
+  - `class ButterbaseProvider(model: str | None = None)` — reads `CLASSPULSE_MODEL` env
+  - `.analyze_video(video_path: Path, prompt: str, schema: type[BaseModel]) -> BaseModel` — uploads clip to Butterbase Storage, gets presigned URL, gateway chat completion with `video_url` content part, JSON-validated with one retry
+  - `.analyze_images(parts: list[str | Path], prompt: str, schema: type[BaseModel]) -> BaseModel` — interleaved text labels (str) and images (Path, sent as base64 data URIs)
+  - `get_provider()` — returns `ButterbaseProvider` unless `CLASSPULSE_PROVIDER=gemini`, then `GeminiClient` (Task 6b)
+
+- [ ] **Step 1: Write failing tests (mocked requests)**
+
+`tests/test_provider.py`:
+```python
+import json
+from unittest.mock import MagicMock, patch
+
+import pytest
+from pydantic import BaseModel
+
+from pipeline.provider import ButterbaseProvider
+
+
+class Answer(BaseModel):
+    value: int
+
+
+ENV = {
+    "BUTTERBASE_API_KEY": "bb_sk_test",
+    "BUTTERBASE_APP_ID": "app_test",
+}
+
+
+def chat_response(text):
+    resp = MagicMock()
+    resp.json.return_value = {"choices": [{"message": {"content": text}}]}
+    resp.raise_for_status.return_value = None
+    return resp
+
+
+def storage_responses():
+    upload_info = MagicMock()
+    upload_info.json.return_value = {"uploadUrl": "https://put", "objectId": "obj-1"}
+    upload_info.raise_for_status.return_value = None
+    dl_info = MagicMock()
+    dl_info.json.return_value = {"downloadUrl": "https://get/clip.mp4"}
+    dl_info.raise_for_status.return_value = None
+    return upload_info, dl_info
+
+
+def test_analyze_video_uploads_then_calls_gateway(tmp_path, monkeypatch):
+    for k, v in ENV.items():
+        monkeypatch.setenv(k, v)
+    video = tmp_path / "clip.mp4"
+    video.write_bytes(b"fake")
+    upload_info, dl_info = storage_responses()
+
+    with patch("pipeline.storage.requests") as store_req, \
+         patch("pipeline.provider.requests") as prov_req:
+        store_req.post.return_value = upload_info      # presigned upload URL
+        store_req.put.return_value = upload_info       # the PUT itself
+        store_req.get.return_value = dl_info           # presigned download URL
+        prov_req.post.return_value = chat_response('{"value": 42}')
+
+        result = ButterbaseProvider(model="test/model").analyze_video(video, "prompt", Answer)
+
+    assert result.value == 42
+    body = prov_req.post.call_args.kwargs["json"]
+    parts = body["messages"][0]["content"]
+    assert any(p.get("type") == "video_url" and p["video_url"]["url"] == "https://get/clip.mp4" for p in parts)
+
+
+def test_json_fences_are_stripped(tmp_path, monkeypatch):
+    for k, v in ENV.items():
+        monkeypatch.setenv(k, v)
+    video = tmp_path / "c.mp4"
+    video.write_bytes(b"x")
+    upload_info, dl_info = storage_responses()
+    with patch("pipeline.storage.requests") as store_req, \
+         patch("pipeline.provider.requests") as prov_req:
+        store_req.post.return_value = upload_info
+        store_req.put.return_value = upload_info
+        store_req.get.return_value = dl_info
+        prov_req.post.return_value = chat_response('```json\n{"value": 7}\n```')
+        result = ButterbaseProvider(model="m").analyze_video(video, "p", Answer)
+    assert result.value == 7
+
+
+def test_analyze_images_builds_data_uris(tmp_path, monkeypatch):
+    for k, v in ENV.items():
+        monkeypatch.setenv(k, v)
+    img = tmp_path / "face.jpg"
+    img.write_bytes(b"\xff\xd8fake")
+    with patch("pipeline.provider.requests") as prov_req:
+        prov_req.post.return_value = chat_response('{"value": 1}')
+        ButterbaseProvider(model="m").analyze_images(["Label:", img], "p", Answer)
+        parts = prov_req.post.call_args.kwargs["json"]["messages"][0]["content"]
+    assert parts[0] == {"type": "text", "text": "Label:"}
+    assert parts[1]["type"] == "image_url"
+    assert parts[1]["image_url"]["url"].startswith("data:image/jpeg;base64,")
+
+
+def test_raises_after_two_bad_responses(tmp_path, monkeypatch):
+    for k, v in ENV.items():
+        monkeypatch.setenv(k, v)
+    img = tmp_path / "f.jpg"
+    img.write_bytes(b"x")
+    with patch("pipeline.provider.requests") as prov_req:
+        prov_req.post.side_effect = [chat_response("nope"), chat_response("still nope")]
+        with pytest.raises(ValueError):
+            ButterbaseProvider(model="m").analyze_images([img], "p", Answer)
+```
+
+- [ ] **Step 2: Run to verify failure**
+
+Run: `pytest tests/test_provider.py -q`
+Expected: FAIL — `ModuleNotFoundError: No module named 'pipeline.provider'`
+
+- [ ] **Step 3: Implement storage helpers**
+
+`pipeline/storage.py`:
+```python
+import mimetypes
+import os
+from pathlib import Path
+
+import requests
+
+
+def _api_url() -> str:
+    return os.environ.get("BUTTERBASE_API_URL", "https://api.butterbase.ai")
+
+
+def _headers() -> dict:
+    return {"Authorization": f"Bearer {os.environ['BUTTERBASE_API_KEY']}"}
+
+
+def _app_id() -> str:
+    return os.environ["BUTTERBASE_APP_ID"]
+
+
+def upload_file(path: Path) -> str:
+    """Upload a local file via presigned URL; returns the durable objectId."""
+    content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+    r = requests.post(
+        f"{_api_url()}/storage/{_app_id()}/upload",
+        headers=_headers(),
+        json={"filename": path.name, "contentType": content_type,
+              "sizeBytes": path.stat().st_size},
+        timeout=30,
+    )
+    r.raise_for_status()
+    info = r.json()
+    put = requests.put(info["uploadUrl"], headers={"Content-Type": content_type},
+                       data=path.read_bytes(), timeout=300)
+    put.raise_for_status()
+    return info["objectId"]
+
+
+def download_url(object_id: str) -> str:
+    """Mint a fresh presigned download URL (expires ~1h)."""
+    r = requests.get(f"{_api_url()}/storage/{_app_id()}/download/{object_id}",
+                     headers=_headers(), timeout=30)
+    r.raise_for_status()
+    return r.json()["downloadUrl"]
+```
+
+- [ ] **Step 4: Implement provider**
+
+`pipeline/provider.py`:
+```python
+import base64
+import json
+import mimetypes
+import os
+import re
+from pathlib import Path
+
+import requests
+from pydantic import BaseModel
+
+from pipeline import storage
+
+
+def _strip_fences(text: str) -> str:
+    m = re.search(r"```(?:json)?\s*(.*?)\s*```", text, re.DOTALL)
+    return m.group(1) if m else text
+
+
+class ButterbaseProvider:
+    """All model calls via the Butterbase AI gateway (OpenAI-compatible)."""
+
+    def __init__(self, model: str | None = None):
+        self.model = model or os.environ["CLASSPULSE_MODEL"]
+        self.api_key = os.environ["BUTTERBASE_API_KEY"]
+        self.app_id = os.environ["BUTTERBASE_APP_ID"]
+        self.api_url = os.environ.get("BUTTERBASE_API_URL", "https://api.butterbase.ai")
+
+    def _chat(self, parts: list[dict], prompt: str, schema: type[BaseModel]) -> BaseModel:
+        instruction = (
+            f"{prompt}\n\nRespond with ONLY valid JSON matching this schema "
+            f"(no prose, no markdown):\n{json.dumps(schema.model_json_schema())}"
+        )
+        content = parts + [{"type": "text", "text": instruction}]
+        last_error = None
+        for _ in range(2):  # one retry
+            r = requests.post(
+                f"{self.api_url}/v1/{self.app_id}/chat/completions",
+                headers={"Authorization": f"Bearer {self.api_key}",
+                         "Content-Type": "application/json"},
+                json={"model": self.model,
+                      "messages": [{"role": "user", "content": content}],
+                      "max_tokens": 8000},
+                timeout=300,
+            )
+            r.raise_for_status()
+            text = r.json()["choices"][0]["message"]["content"]
+            try:
+                return schema.model_validate_json(_strip_fences(text))
+            except Exception as e:
+                last_error = e
+        raise ValueError(f"gateway returned invalid {schema.__name__}: {last_error}")
+
+    def analyze_video(self, video_path: Path, prompt: str, schema: type[BaseModel]) -> BaseModel:
+        object_id = storage.upload_file(video_path)
+        url = storage.download_url(object_id)
+        return self._chat([{"type": "video_url", "video_url": {"url": url}}], prompt, schema)
+
+    def analyze_images(self, parts: list, prompt: str, schema: type[BaseModel]) -> BaseModel:
+        content = []
+        for p in parts:
+            if isinstance(p, Path):
+                mime = mimetypes.guess_type(p.name)[0] or "image/jpeg"
+                b64 = base64.b64encode(p.read_bytes()).decode()
+                content.append({"type": "image_url",
+                                "image_url": {"url": f"data:{mime};base64,{b64}"}})
+            else:
+                content.append({"type": "text", "text": p})
+        return self._chat(content, prompt, schema)
+
+
+def get_provider():
+    if os.environ.get("CLASSPULSE_PROVIDER", "butterbase") == "gemini":
+        from pipeline.gemini import GeminiClient
+        return GeminiClient()
+    return ButterbaseProvider()
+```
+
+- [ ] **Step 5: Run to verify pass**
+
+Run: `pytest tests/test_provider.py -q`
+Expected: 4 passed
+
+- [ ] **Step 6: Live smoke test (manual — needs the Butterbase app created and env vars set)**
+
+Prereq: app exists (`init_app`), `BUTTERBASE_API_KEY` / `BUTTERBASE_APP_ID` / `CLASSPULSE_MODEL` set. Pick the model id from `GET /v1/public/models` (a Gemini vision model).
+
+Run:
+```bash
+python - <<'EOF'
+from pydantic import BaseModel
+from pipeline.provider import ButterbaseProvider
+
+class Ping(BaseModel):
+    ok: bool
+
+p = ButterbaseProvider()
+print(p.analyze_images(["Say ok=true."], "Follow the instruction.", Ping))
+EOF
+```
+Expected: `ok=True`. Then a second smoke with a tiny video file through `analyze_video` — this is the moment we learn whether gateway `video_url` + Gemini works; if it fails, set `CLASSPULSE_PROVIDER=gemini` and continue (Task 6b).
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add pipeline/storage.py pipeline/provider.py tests/test_provider.py
+git commit -m "feat: Butterbase gateway provider with storage-backed video analysis"
+```
+
+---
+
+### Task 6b: Fallback Gemini client (gemini.py)
+
+Direct-Gemini implementation of the same three-method interface, used when `CLASSPULSE_PROVIDER=gemini`.
 
 **Files:**
 - Create: `pipeline/gemini.py`
@@ -846,10 +1140,10 @@ git commit -m "feat: Gemini client with video upload and structured output"
 - Test: `tests/test_roster.py`
 
 **Interfaces:**
-- Consumes: `GeminiClient.analyze_images`; `TracksFile`, `RosterMatches` from schemas; track thumbnails from Task 5
+- Consumes: the provider interface's `analyze_images` (Task 6 / 6b — duck-typed, works with either); `TracksFile`, `RosterMatches` from schemas; track thumbnails from Task 5
 - Produces:
   - `load_roster(roster_dir: Path) -> dict[str, Path]` — `{"Alice": Path(".../Alice.jpg"), ...}` from filename stems, sorted, jpg/jpeg/png
-  - `match_tracks(client: GeminiClient, roster: dict[str, Path], tracks: TracksFile) -> RosterMatches` — single Gemini call over all roster photos + all track thumbnails
+  - `match_tracks(client, roster: dict[str, Path], tracks: TracksFile) -> RosterMatches` — single gateway call over all roster photos + all track thumbnails
   - `ROSTER_PROMPT` (module constant)
 
 - [ ] **Step 1: Write failing tests**
@@ -908,7 +1202,6 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'pipeline.roster'`
 ```python
 from pathlib import Path
 
-from pipeline.gemini import GeminiClient
 from pipeline.schemas import RosterMatches, TracksFile
 
 ROSTER_PROMPT = """You are matching detected people in a classroom video to a student roster.
@@ -927,9 +1220,7 @@ def load_roster(roster_dir: Path) -> dict[str, Path]:
     return {p.stem: p for p in photos}
 
 
-def match_tracks(
-    client: GeminiClient, roster: dict[str, Path], tracks: TracksFile
-) -> RosterMatches:
+def match_tracks(client, roster: dict[str, Path], tracks: TracksFile) -> RosterMatches:
     parts: list = []
     for name, photo in roster.items():
         parts.append(f"Roster photo — student name: {name}")
@@ -961,10 +1252,10 @@ git commit -m "feat: roster loading and Gemini track matching"
 - Test: `tests/test_analyze.py`
 
 **Interfaces:**
-- Consumes: `GeminiClient.analyze_video`; `Track`, `StudentAnalysis` from schemas
+- Consumes: the provider interface's `analyze_video` (Task 6 / 6b — duck-typed); `Track`, `StudentAnalysis` from schemas
 - Produces:
   - `ANALYSIS_PROMPT` (module constant)
-  - `analyze_students(client: GeminiClient, tracks: list[Track], max_workers: int = 4) -> dict[int, StudentAnalysis | None]` — parallel over tracks with `clip_path`; a per-track exception degrades that track to `None` (spec: per-student failure must not kill the run)
+  - `analyze_students(client, tracks: list[Track], max_workers: int = 4) -> dict[int, StudentAnalysis | None]` — parallel over tracks with `clip_path`; a per-track exception degrades that track to `None` (spec: per-student failure must not kill the run)
 
 - [ ] **Step 1: Write failing tests**
 
@@ -1026,7 +1317,6 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'pipeline.analyze'`
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from pipeline.gemini import GeminiClient
 from pipeline.schemas import StudentAnalysis, Track
 
 ANALYSIS_PROMPT = """This video is a single student, cropped from a classroom lesson recording.
@@ -1039,11 +1329,14 @@ Return:
 - distraction_events: only clear ones (phone, asleep, chatting, looking_away, other),
   with t_start/t_end and a short note
 - evidence: 2-5 timestamped observations that justify your scores
-- summary: one honest paragraph about this student's engagement"""
+- summary: one honest paragraph about this student's engagement
+- suggestion: ONE actionable coaching suggestion for the teacher about this student
+  (e.g. "disengages during long solo exercises - try pairing him up"); if the student
+  is doing great, suggest how to keep it that way"""
 
 
 def analyze_students(
-    client: GeminiClient, tracks: list[Track], max_workers: int = 4
+    client, tracks: list[Track], max_workers: int = 4
 ) -> dict[int, StudentAnalysis | None]:
     todo = [t for t in tracks if t.clip_path]
 
@@ -1132,7 +1425,7 @@ def test_full_run_writes_report(synthetic_video, tmp_path):
     gemini.analyze_video.return_value = analysis
 
     with patch("pipeline.cli.run_tracking", return_value=fake_tracks_file(video)), \
-         patch("pipeline.cli.GeminiClient", return_value=gemini):
+         patch("pipeline.cli.get_provider", return_value=gemini):
         run(lesson_dir=lesson, work_dir=work, stage=None)
 
     report = json.loads((work / "report.json").read_text())
@@ -1159,7 +1452,7 @@ def test_single_stage_reuses_artifacts(synthetic_video, tmp_path):
         evidence=[], summary="ok",
     )
     with patch("pipeline.cli.run_tracking", return_value=fake_tracks_file(video)) as mock_track, \
-         patch("pipeline.cli.GeminiClient", return_value=gemini):
+         patch("pipeline.cli.get_provider", return_value=gemini):
         run(lesson_dir=lesson, work_dir=work, stage="track")
         run(lesson_dir=lesson, work_dir=work, stage="crop")
         run(lesson_dir=lesson, work_dir=work, stage="analyze")
@@ -1182,7 +1475,7 @@ from pathlib import Path
 
 from pipeline.analyze import analyze_students
 from pipeline.cropper import crop_clip, save_thumbnail
-from pipeline.gemini import GeminiClient
+from pipeline.provider import get_provider
 from pipeline.roster import load_roster, match_tracks
 from pipeline.schemas import RosterMatches, StudentAnalysis, TracksFile
 from pipeline.tracking import run_tracking
@@ -1221,13 +1514,13 @@ def run(lesson_dir: Path, work_dir: Path, stage: str | None) -> None:
         tracks = _load_tracks(work_dir)
         roster = load_roster(lesson_dir / "roster")
         print(f"[match] {len(roster)} roster photos vs {len(tracks.tracks)} tracks")
-        matches = match_tracks(GeminiClient(), roster, tracks)
+        matches = match_tracks(get_provider(), roster, tracks)
         (work_dir / "matches.json").write_text(matches.model_dump_json(indent=2))
 
     if "analyze" in stages:
         tracks = _load_tracks(work_dir)
         print(f"[analyze] {len(tracks.tracks)} clips")
-        analyses = analyze_students(GeminiClient(), tracks.tracks)
+        analyses = analyze_students(get_provider(), tracks.tracks)
         _write_report(work_dir, tracks, analyses)
         print(f"[analyze] report -> {work_dir / 'report.json'}")
 
@@ -1298,7 +1591,7 @@ git commit -m "feat: pipeline CLI with stage orchestration and report output"
 - Create: `docs/notes/phase0-results.md` (findings log)
 
 **Interfaces:**
-- Consumes: the full CLI; user-provided `samples/lesson1..3` with rosters; `GEMINI_API_KEY`
+- Consumes: the full CLI; user-provided `samples/lesson1..3` with rosters; Butterbase env vars (`BUTTERBASE_API_KEY`, `BUTTERBASE_APP_ID`, `CLASSPULSE_MODEL`) — or `CLASSPULSE_PROVIDER=gemini` + `GEMINI_API_KEY` if the gateway path disappointed in Task 6 Step 6
 
 - [ ] **Step 1: Confirm samples in place**
 
