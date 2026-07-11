@@ -4,3 +4,12 @@ sample-videos/*.mp4
 
 # macOS
 .DS_Store
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Pipeline artifacts + model weights
+work/
+*.pt
