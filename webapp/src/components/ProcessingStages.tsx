@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 /* ── Tech pills ── */
 
@@ -143,6 +143,19 @@ export default function ProcessingStages({
   const [index, setIndex] = useState(0);
   const [announced, setAnnounced] = useState(false);
 
+  // Center the active card in the wheel, whatever the wheel's actual height is.
+  const wheelRef = useRef<HTMLDivElement>(null);
+  const [wheelH, setWheelH] = useState(0);
+  useLayoutEffect(() => {
+    const el = wheelRef.current;
+    if (!el) return;
+    const measure = () => setWheelH(el.clientHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   useEffect(() => {
     if (index >= finalIndex) return;                   // final row is terminal
     if (index === finalIndex - 1 && !ready) return;    // hold until the work lands
@@ -157,11 +170,14 @@ export default function ProcessingStages({
     }
   }, [index, finalIndex, announced, onFinished]);
 
-  // keep the (taller) final card visually centered in the wheel
-  const shift = (CENTER - index) * ITEM_H - (index === finalIndex ? (FINAL_H - ITEM_H) / 2 : 0);
+  // put the active card's midline on the wheel's midline (the final card is taller)
+  const activeH = index === finalIndex ? FINAL_H : ITEM_H;
+  const shift = wheelH
+    ? wheelH / 2 - activeH / 2 - index * ITEM_H
+    : (CENTER - index) * ITEM_H;
 
   return (
-    <div className="wheel" role="status" aria-live="polite">
+    <div className="wheel" role="status" aria-live="polite" ref={wheelRef}>
       <div className="wheel-track" style={{ transform: `translateY(${shift}px)` }}>
         {items.map((s, i) => {
           const offset = i - index;
