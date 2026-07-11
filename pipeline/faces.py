@@ -61,6 +61,21 @@ def build_roster(roster_img: Path, names: list[str], out_dir: Path) -> dict[str,
     return roster
 
 
+def load_roster_photos(photos: dict[str, Path]) -> dict[str, np.ndarray]:
+    """Embed already-cropped per-student roster photos: {name: photo_path}."""
+    roster: dict[str, np.ndarray] = {}
+    for name, path in photos.items():
+        img = cv2.imread(str(path))
+        if img is None:
+            raise FileNotFoundError(path)
+        faces = face_app().get(img)
+        if not faces:
+            raise RuntimeError(f"no face detected in roster photo {path}")
+        largest = max(faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
+        roster[name] = largest.normed_embedding
+    return roster
+
+
 def track_embedding(video_path: Path, track: Track, n_samples: int = 5) -> np.ndarray | None:
     """Average normed face embedding over sampled frames of the track's crop."""
     x1, y1, x2, y2 = track.crop

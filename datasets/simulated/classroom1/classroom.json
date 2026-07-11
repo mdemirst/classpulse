@@ -1,0 +1,22 @@
+{
+  "id": "classroom1",
+  "name": "Classroom 1 (simulated)",
+  "teacher_name": "Ms. Rivera",
+  "grade": "7",
+  "roster": [
+    { "name": "Sofia", "photo": "roster/Sofia.jpg" },
+    { "name": "Ben", "photo": "roster/Ben.jpg" },
+    { "name": "Emma", "photo": "roster/Emma.jpg" },
+    { "name": "Lucas", "photo": "roster/Lucas.jpg" },
+    { "name": "Kevin", "photo": "roster/Kevin.jpg" },
+    { "name": "Amara", "photo": "roster/Amara.jpg" }
+  ],
+  "roster_source": "roster-source.jpeg",
+  "lectures": [
+    {
+      "id": "lecture1",
+      "title": "Lecture 1",
+      "video": "lectures/lecture1.mp4"
+    }
+  ]
+}

@@ -1,5 +1,6 @@
-# Large local data — not tracked in git
-datasets/
+# Large local data — not tracked in git (simulated test set IS tracked)
+datasets/*
+!datasets/simulated/
 sample-videos/*.mp4
 
 # macOS

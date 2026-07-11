@@ -19,11 +19,13 @@ def _save_tracks(work_dir: Path, tracks: TracksFile) -> None:
     (work_dir / "tracks.json").write_text(tracks.model_dump_json(indent=2))
 
 
-def run(video: Path, work_dir: Path, stage: str | None, model: str,
-        conf: float, stride: int, min_track_sec: float,
-        pad: float, torso_frac: float,
-        roster: Path | None = None, names: str = DEFAULT_NAMES) -> None:
-    stages = (STAGES if roster else ["track", "crop"]) if stage is None else [stage]
+def run(video: Path, work_dir: Path, stage: str | None = None,
+        model: str = "yolo11m.pt", conf: float = 0.35, stride: int = 2,
+        min_track_sec: float = 2.0, pad: float = 0.05, torso_frac: float = 0.7,
+        roster: Path | None = None, names: str = DEFAULT_NAMES,
+        roster_photos: dict[str, Path] | None = None) -> None:
+    has_roster = roster is not None or roster_photos is not None
+    stages = (STAGES if has_roster else ["track", "crop"]) if stage is None else [stage]
 
     if "track" in stages:
         print(f"[track] {video} (model={model}, conf={conf}, stride={stride})")
@@ -47,14 +49,18 @@ def run(video: Path, work_dir: Path, stage: str | None, model: str,
         print(f"[crop] done: {len(tracks.tracks)} clips in {work_dir / 'clips'}")
 
     if "recognize" in stages:
-        if roster is None:
-            raise SystemExit("recognize stage needs --roster <grid image>")
-        from pipeline.faces import build_roster, recognize_tracks  # heavy import
+        if roster is None and roster_photos is None:
+            raise SystemExit("recognize stage needs --roster <grid image> or classroom roster photos")
+        from pipeline.faces import build_roster, load_roster_photos, recognize_tracks  # heavy import
 
         tracks = _load_tracks(work_dir)
-        name_list = [n.strip() for n in names.split(",") if n.strip()]
-        print(f"[recognize] roster {roster} -> {name_list}")
-        embeddings = build_roster(roster, name_list, work_dir / "roster")
+        if roster_photos is not None:
+            print(f"[recognize] roster photos -> {list(roster_photos)}")
+            embeddings = load_roster_photos(roster_photos)
+        else:
+            name_list = [n.strip() for n in names.split(",") if n.strip()]
+            print(f"[recognize] roster {roster} -> {name_list}")
+            embeddings = build_roster(roster, name_list, work_dir / "roster")
         matches = recognize_tracks(video, tracks, embeddings)
         by_id = {m["track_id"]: m for m in matches}
         for t in tracks.tracks:
@@ -72,9 +78,29 @@ def run(video: Path, work_dir: Path, stage: str | None, model: str,
         print(f"[recognize] matches -> {work_dir / 'matches.json'}")
 
 
+def run_classroom(classroom_dir: Path, lecture: str | None, work_root: Path | None) -> None:
+    """Process lectures from a classroom.json dataset (the checked-in test pattern)."""
+    meta = json.loads((classroom_dir / "classroom.json").read_text())
+    photos = {s["name"]: classroom_dir / s["photo"] for s in meta["roster"]}
+    lectures = [l for l in meta["lectures"] if lecture is None or l["id"] == lecture]
+    if not lectures:
+        raise SystemExit(f"no lecture '{lecture}' in {classroom_dir / 'classroom.json'}")
+    work_root = work_root or Path("work") / meta["id"]
+    for lec in lectures:
+        print(f"=== {meta['id']} / {lec['id']} ===")
+        run(video=classroom_dir / lec["video"], work_dir=work_root / lec["id"],
+            roster_photos=photos)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="pipeline")
     sub = parser.add_subparsers(dest="command", required=True)
+
+    c = sub.add_parser("classroom", help="process lectures from a classroom.json dataset")
+    c.add_argument("classroom_dir", type=Path, help="dir containing classroom.json")
+    c.add_argument("--lecture", default=None, help="lecture id (default: all)")
+    c.add_argument("--work", type=Path, default=None, help="work root (default: work/<classroom_id>)")
+
     p = sub.add_parser("process", help="track students in a video and crop per-student clips")
     p.add_argument("video", type=Path)
     p.add_argument("--work", type=Path, required=True, help="artifact output dir")
@@ -91,6 +117,9 @@ def main() -> None:
     p.add_argument("--names", default=DEFAULT_NAMES,
                    help="comma-separated student names in roster reading order")
     args = parser.parse_args()
-    run(video=args.video, work_dir=args.work, stage=args.stage, model=args.model,
-        conf=args.conf, stride=args.stride, min_track_sec=args.min_track_sec,
-        pad=args.pad, torso_frac=args.torso_frac, roster=args.roster, names=args.names)
+    if args.command == "classroom":
+        run_classroom(args.classroom_dir, args.lecture, args.work)
+    else:
+        run(video=args.video, work_dir=args.work, stage=args.stage, model=args.model,
+            conf=args.conf, stride=args.stride, min_track_sec=args.min_track_sec,
+            pad=args.pad, torso_frac=args.torso_frac, roster=args.roster, names=args.names)
