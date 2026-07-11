@@ -1537,3 +1537,98 @@ button.hex-cell { cursor: pointer; }
   color: var(--good); font-weight: 700;
 }
 .landing-chart .progression-graph { width: 100%; height: auto; display: block; }
+
+/* ══ Landing — classroom photo hero ══ */
+.landing-photo {
+  position: relative;
+  min-height: calc(100vh - 60px);
+  margin: -24px -20px -80px;          /* bleed past the app container padding */
+  display: flex; align-items: center;
+  background: url("/classroom-hero.jpg") center right / cover no-repeat #0d0d0c;
+  overflow: hidden;
+}
+/* dark wash so the copy always reads, heaviest on the left */
+.landing-photo-tint {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(90deg,
+      rgba(10, 10, 9, 0.97) 0%,
+      rgba(10, 10, 9, 0.92) 26%,
+      rgba(10, 10, 9, 0.62) 48%,
+      rgba(10, 10, 9, 0.34) 70%,
+      rgba(10, 10, 9, 0.28) 100%),
+    linear-gradient(0deg, rgba(10, 10, 9, 0.75) 0%, rgba(10, 10, 9, 0) 45%);
+}
+/* dot tint over the whole thing */
+.landing-photo-dots {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px);
+  background-size: 4px 4px;
+  mix-blend-mode: overlay;
+}
+
+.landing-photo-inner {
+  position: relative; z-index: 2;
+  width: 100%; max-width: 1180px; margin: 0 auto;
+  padding: 56px 28px;
+}
+
+.landing-photo-title {
+  font-size: clamp(46px, 6.4vw, 86px);
+  font-weight: 800; line-height: 1.02; letter-spacing: -0.035em;
+  margin: 0 0 22px; max-width: 12ch;
+}
+.landing-photo-title .accent { color: var(--series); }
+
+.landing-photo-sub {
+  font-size: clamp(17px, 1.5vw, 21px); line-height: 1.5;
+  color: var(--ink-2); max-width: 30ch; margin: 0 0 30px;
+}
+
+.landing-features {
+  list-style: none; padding: 0; margin: 0 0 34px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.landing-features li {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 16px; color: var(--ink);
+}
+
+.landing-photo-cta {
+  display: inline-block; padding: 17px 34px; border-radius: 12px;
+  font-size: 17px; font-weight: 700; color: #fff;
+  background: var(--series);
+  box-shadow: 0 10px 34px rgba(57, 135, 229, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.landing-photo-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 44px rgba(57, 135, 229, 0.5);
+}
+
+.landing-privacy {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 16px; font-size: 13px; color: var(--ink-3);
+}
+
+.landing-stats {
+  display: flex; gap: 12px; flex-wrap: wrap; margin-top: 56px;
+}
+.landing-stat {
+  min-width: 148px; padding: 14px 18px; border-radius: 12px;
+  background: rgba(20, 20, 19, 0.72); border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.landing-stat-value {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 26px; font-weight: 700; line-height: 1.1;
+}
+.landing-stat-label { font-size: 12px; color: var(--ink-3); margin-top: 3px; }
+
+@media (max-width: 900px) {
+  .landing-photo { background-position: 72% center; }
+  .landing-photo-tint {
+    background: linear-gradient(0deg, rgba(10,10,9,0.96) 30%, rgba(10,10,9,0.55) 100%);
+  }
+  .landing-photo-title, .landing-photo-sub { max-width: none; }
+}
