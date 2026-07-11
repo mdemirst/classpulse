@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import {
-  CartesianGrid, Line, LineChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis,
-} from "recharts";
+import DistractionTimeline from "../components/DistractionTimeline";
+import HexCell from "../components/HexCell";
+import HexRadar from "../components/HexRadar";
+import HoneycombGrid from "../components/HoneycombGrid";
+import PulseChart from "../components/PulseChart";
+import StudentHexCard from "../components/StudentHexCard";
+import TeacherCoachingSection from "../components/TeacherCoachingSection";
+import TeacherPulsePanel from "../components/TeacherPulsePanel";
+import TranscriptPanel from "../components/TranscriptPanel";
 import { fmtTime, row, rows } from "../api";
+import { lessonCoachingCards, teachingScore } from "../lib/teacherCoaching";
+import { initials } from "../lib/scores";
 import type { Classroom, Lesson, Student, StudentResult } from "../types";
-
-function scoreColor(score: number | null): string {
-  if (score === null) return "var(--ink-3)";
-  if (score >= 75) return "var(--good)";
-  if (score >= 55) return "var(--warning)";
-  return "var(--critical)";
-}
 
 export default function LessonPage() {
   const { id } = useParams();
@@ -19,6 +20,7 @@ export default function LessonPage() {
   const [classroom, setClassroom] = useState<Classroom | null>(null);
   const [results, setResults] = useState<StudentResult[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [classroomLessons, setClassroomLessons] = useState<Lesson[]>([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -26,12 +28,13 @@ export default function LessonPage() {
     row<Lesson>("lessons", id)
       .then(async (l) => {
         setLesson(l);
-        const [c, r, s] = await Promise.all([
+        const [c, r, s, clsLessons] = await Promise.all([
           row<Classroom>("classrooms", l.classroom_id),
           rows<StudentResult>("student_results", `lesson_id=eq.${l.id}`),
           rows<Student>("students", `classroom_id=eq.${l.classroom_id}`),
+          rows<Lesson>("lessons", `classroom_id=eq.${l.classroom_id}&order=lesson_date.asc&status=eq.done`),
         ]);
-        setClassroom(c); setResults(r); setStudents(s);
+        setClassroom(c); setResults(r); setStudents(s); setClassroomLessons(clsLessons);
       })
       .catch((e) => setError(String(e)));
   }, [id]);
@@ -44,63 +47,70 @@ export default function LessonPage() {
   const timeline = lesson.engagement_timeline?.items ?? [];
   const highlights = lesson.highlights?.items ?? [];
   const present = results.filter((r) => r.present);
-  const sortedResults = results.slice().sort(
-    (a, b) => (a.engagement_score ?? -1) - (b.engagement_score ?? -1)
-  );
+  const duration = lesson.duration_sec ?? 1800;
+  const allDistractions = results.flatMap((r) => r.distraction_events?.items ?? []);
+  const sortedResults = results
+    .filter((r) => r.present)
+    .slice()
+    .sort((a, b) => (a.engagement_score ?? -1) - (b.engagement_score ?? -1));
+
+  const lessonIdx = classroomLessons.findIndex((l) => l.id === lesson.id);
+  const prevLesson = lessonIdx > 0 ? classroomLessons[lessonIdx - 1] : null;
+  const scoreDelta = prevLesson
+    ? (teachingScore(lesson) ?? 0) - (teachingScore(prevLesson) ?? 0)
+    : null;
+  const coachingCards = lessonCoachingCards(lesson, results, nameOf);
 
   return (
     <>
-      <div className="crumb"><Link to="/">← All classrooms</Link></div>
-      <h1>{lesson.title}</h1>
-      <div className="sub">
-        {classroom?.name} · {classroom?.teacher_name} ·{" "}
-        {new Date(lesson.lesson_date).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
-        {lesson.duration_sec ? ` · ${Math.round(lesson.duration_sec / 60)} min` : ""}
+      <div className="crumb">
+        <Link to="/">← All classrooms</Link>
+        {classroom && (
+          <> · <Link to={`/classroom/${classroom.id}`}>{classroom.name}</Link></>
+        )}
       </div>
 
-      <h2>Lesson scores</h2>
-      <div className="statrow">
-        {(lesson.class_scores?.items ?? []).map((s) => (
-          <div className="stat" key={s.dimension}>
-            <div className="label">{s.dimension}</div>
-            <div className="value" style={{ color: scoreColor(s.score) }}>{s.score}</div>
-            <details>
-              <summary>evidence</summary>
-              <ul>
-                {s.evidence.map((e, i) => (
-                  <li key={i}><b>{fmtTime(e.t)}</b> — {e.note}</li>
-                ))}
-              </ul>
-            </details>
+      <div className="lesson-hero">
+        <div className="lesson-hero-text">
+          <h1>{lesson.title}</h1>
+          <div className="sub">
+            {classroom?.name} · {classroom?.teacher_name} ·{" "}
+            {new Date(lesson.lesson_date).toLocaleDateString(undefined, {
+              weekday: "long", month: "long", day: "numeric",
+            })}
+            {lesson.duration_sec ? ` · ${Math.round(lesson.duration_sec / 60)} min` : ""}
           </div>
-        ))}
+        </div>
+        <div className="lesson-hero-radar card glass">
+          <HexRadar lesson={lesson} />
+        </div>
       </div>
+
+      <section className="section-panel teacher-coaching-block">
+        <TeacherPulsePanel
+          lesson={lesson}
+          scoreDelta={scoreDelta}
+          subtitle={`Coaching for ${classroom?.teacher_name ?? "you"} — this lesson`}
+        />
+        <TeacherCoachingSection
+          cards={coachingCards}
+          teacherName={classroom?.teacher_name}
+          description="Strengths to keep, gaps to address, and student-specific actions"
+        />
+      </section>
 
       {timeline.length > 0 && (
-        <>
-          <h2>Class pulse</h2>
-          <div className="card" style={{ height: 220 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={timeline} margin={{ top: 10, right: 16, bottom: 0, left: -18 }}>
-                <CartesianGrid stroke="#3a3a38" strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="t" tickFormatter={fmtTime} stroke="#8a897f" fontSize={12} tickLine={false} />
-                <YAxis domain={[0, 100]} stroke="#8a897f" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{ background: "#242423", border: "1px solid #3a3a38", borderRadius: 8 }}
-                  labelFormatter={(t) => `at ${fmtTime(Number(t))}`}
-                  formatter={(v) => [`${v}`, "engagement"]}
-                />
-                <Line type="monotone" dataKey="score" stroke="#3987e5" strokeWidth={2} dot={false} isAnimationActive={false} />
-                {highlights.map((h, i) => {
-                  const nearest = timeline.reduce((a, b) =>
-                    Math.abs(b.t - h.t) < Math.abs(a.t - h.t) ? b : a);
-                  return (
-                    <ReferenceDot key={i} x={nearest.t} y={nearest.score} r={5}
-                      fill="#fab219" stroke="#1a1a19" strokeWidth={2} />
-                  );
-                })}
-              </LineChart>
-            </ResponsiveContainer>
+        <section className="section-panel">
+          <h2 className="section-hex">Class pulse</h2>
+          <PulseChart
+            data={timeline}
+            highlights={highlights}
+            distractions={allDistractions}
+          />
+          <div className="chart-legend">
+            <span><i className="dot series" /> Engagement</span>
+            <span><i className="dot highlight" /> Highlights</span>
+            <span><i className="dot distraction" /> Distractions</span>
           </div>
           {highlights.length > 0 && (
             <div className="sub" style={{ marginTop: 8 }}>
@@ -109,51 +119,58 @@ export default function LessonPage() {
               ))}
             </div>
           )}
-        </>
+          <h3 className="section-sub">Distraction density</h3>
+          <DistractionTimeline events={allDistractions} duration={duration} height={14} />
+        </section>
       )}
 
-      <h2>Attendance ({present.length}/{results.length || students.length})</h2>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {results.map((r) => (
-          <span className={`pill ${r.present ? "present" : "absent"}`} key={r.id}>
-            {nameOf(r.student_id)}{r.present ? "" : " · absent"}
-          </span>
-        ))}
+      <h2 className="section-hex">Attendance ({present.length}/{results.length || students.length})</h2>
+      <div className="attendance-hex-row">
+        {results.map((r) => {
+          const name = nameOf(r.student_id);
+          return (
+            <div className="attendance-hex" key={r.id} title={name}>
+              <HexCell
+                size={52}
+                stroke={r.present ? "var(--good)" : "var(--border)"}
+                fill={r.present ? "rgba(12,163,12,0.08)" : "var(--card)"}
+              >
+                <span className="attendance-hex-init">{initials(name)}</span>
+              </HexCell>
+              <span className="attendance-hex-name">{name.split(" ")[0]}</span>
+            </div>
+          );
+        })}
       </div>
 
-      <h2>Students</h2>
-      <div className="grid cols-3">
-        {sortedResults.filter((r) => r.present).map((r) => (
-          <div className="card student-card" key={r.id}>
-            <div className="head">
-              <span className="name">{nameOf(r.student_id)}</span>
-              <span className="big" style={{ color: scoreColor(r.engagement_score) }}>
-                {r.engagement_score ?? "—"}
-              </span>
-            </div>
-            {(r.distraction_events?.items ?? []).length > 0 && (
-              <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {r.distraction_events!.items.map((d, i) => (
-                  <span className="pill kind" key={i} title={d.note}>
-                    {d.kind.replace("_", " ")} @ {fmtTime(d.t_start)}
-                  </span>
-                ))}
-              </div>
-            )}
-            {r.summary && <p>{r.summary}</p>}
-            {r.suggestion && (
-              <div className="suggest"><b>Try:</b> {r.suggestion}</div>
-            )}
+      <h2 className="section-hex">Students</h2>
+      <div className="sub section-desc">Needs attention first — click a hex to expand</div>
+      <HoneycombGrid>
+        {sortedResults.map((r, i) => (
+          <div key={r.id} className="honeycomb-item" style={{ animationDelay: `${i * 40}ms` }}>
+            <StudentHexCard
+              result={r}
+              student={students.find((s) => s.id === r.student_id)}
+              duration={duration}
+              highlight={(r.engagement_score ?? 100) < 55}
+              reportCardHref={
+                classroom && r.student_id
+                  ? `/classroom/${classroom.id}/student/${r.student_id}`
+                  : undefined
+              }
+            />
           </div>
         ))}
-      </div>
+      </HoneycombGrid>
 
       {lesson.notes_md && (
-        <>
-          <h2>Lesson notes</h2>
+        <section className="section-panel">
+          <h2 className="section-hex">Lesson notes</h2>
           <div className="notes">{lesson.notes_md.replace(/^#+\s*/gm, "").replace(/\*\*/g, "")}</div>
-        </>
+        </section>
       )}
+
+      <TranscriptPanel transcript={lesson.transcript} />
     </>
   );
 }
