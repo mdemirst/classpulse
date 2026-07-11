@@ -6,7 +6,7 @@ from pipeline.cropper import crop_clip, save_thumbnail
 from pipeline.schemas import TracksFile
 from pipeline.tracking import detect_and_track, render_debug_video
 
-STAGES = ["track", "crop", "recognize"]
+STAGES = ["track", "crop", "recognize", "analyze"]
 DEFAULT_NAMES = "Sofia,Ben,Emma,Lucas,Kevin,Amara"
 
 
@@ -76,6 +76,16 @@ def run(video: Path, work_dir: Path, stage: str | None = None,
         _save_tracks(work_dir, tracks)
         (work_dir / "matches.json").write_text(json.dumps(matches, indent=2))
         print(f"[recognize] matches -> {work_dir / 'matches.json'}")
+
+    if "analyze" in stages:
+        from pipeline.analyze import analyze_students  # network stage
+        from pipeline.provider import get_provider
+
+        tracks = _load_tracks(work_dir)
+        provider = get_provider()
+        print(f"[analyze] {len(tracks.tracks)} clips via {type(provider).__name__} ({provider.model})")
+        analyze_students(provider, tracks.tracks, work_dir / "analysis")
+        print(f"[analyze] results -> {work_dir / 'analysis'}")
 
 
 def run_classroom(classroom_dir: Path, lecture: str | None, work_root: Path | None) -> None:
