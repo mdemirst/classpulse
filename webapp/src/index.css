@@ -1007,69 +1007,87 @@ button.hex-cell { cursor: pointer; }
 }
 .studio-event:hover { border-color: var(--serious); color: var(--ink); }
 
-/* ══ Processing run view (demo animation) ══ */
-.run-view { max-width: 720px; margin: 0 auto; padding-top: 12px; }
+/* ══ Processing run view — wheel picker ══ */
+.run-view { max-width: 760px; margin: 0 auto; padding-top: 12px; text-align: center; }
 .run-view h1 { margin-bottom: 4px; }
 
-.stages { margin-top: 28px; display: flex; flex-direction: column; gap: 4px; }
+.wheel {
+  position: relative;
+  height: 590px;               /* 5 rows */
+  margin-top: 24px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom,
+    transparent 0%, #000 22%, #000 78%, transparent 100%);
+  mask-image: linear-gradient(to bottom,
+    transparent 0%, #000 22%, #000 78%, transparent 100%);
+}
+.wheel-track {
+  transition: transform 0.7s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
 
-.stage {
-  display: flex; gap: 14px; align-items: flex-start;
-  padding: 14px 16px; border-radius: 12px;
-  border: 1px solid transparent;
-  transition: opacity 0.5s ease, background 0.5s ease, border-color 0.5s ease, transform 0.5s ease;
+.wheel-item {
+  height: 118px;               /* must match ITEM_H in ProcessingStages.tsx */
+  display: flex; gap: 16px; align-items: center; justify-content: flex-start;
+  padding: 0 22px; margin: 0 auto; max-width: 620px; text-align: left;
+  border: 1px solid transparent; border-radius: 16px;
+  transform: scale(calc(1 - var(--dist) * 0.07));
+  opacity: calc(1 - var(--dist) * 0.34);
+  transition: transform 0.7s cubic-bezier(0.32, 0.72, 0, 1),
+              opacity 0.7s ease, background 0.7s ease, border-color 0.7s ease;
+  will-change: transform, opacity;
 }
-.stage.pending { opacity: 0.28; }
-.stage.active {
+.wheel-item.active {
+  transform: scale(1.06);
   opacity: 1;
-  background: rgba(57, 135, 229, 0.1);
-  border-color: rgba(57, 135, 229, 0.45);
-  box-shadow: 0 0 28px rgba(57, 135, 229, 0.1);
+  background: rgba(57, 135, 229, 0.12);
+  border-color: rgba(57, 135, 229, 0.5);
+  box-shadow: 0 0 40px rgba(57, 135, 229, 0.12);
 }
-.stage.done { opacity: 0.75; }
-.stage.final.done {
-  opacity: 1;
-  background: rgba(12, 163, 12, 0.12);
-  border-color: rgba(12, 163, 12, 0.5);
+.wheel-item.final.active {
+  background: rgba(12, 163, 12, 0.14);
+  border-color: rgba(12, 163, 12, 0.55);
+  box-shadow: 0 0 40px rgba(12, 163, 12, 0.12);
 }
 
 .stage-icon {
-  width: 22px; height: 22px; flex-shrink: 0; margin-top: 2px;
+  width: 26px; height: 26px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  border-radius: 50%; font-size: 12px; font-weight: 700;
+  border-radius: 50%; font-size: 13px; font-weight: 700;
   border: 1px solid var(--border); color: var(--ink-3);
+  transition: color 0.4s, border-color 0.4s;
 }
-.stage.done .stage-icon { color: var(--good); border-color: var(--good); }
-.stage.active .stage-icon { border-color: var(--series); }
-.stage.final.done .stage-icon { color: var(--good); border-color: var(--good); }
+.wheel-item.done .stage-icon { color: var(--good); border-color: var(--good); }
+.wheel-item.active .stage-icon { border-color: var(--series); }
+.wheel-item.final.active .stage-icon { color: var(--good); border-color: var(--good); }
 
 .stage-spin {
-  width: 10px; height: 10px; border-radius: 50%;
+  width: 11px; height: 11px; border-radius: 50%;
   border: 2px solid rgba(57, 135, 229, 0.25);
   border-top-color: var(--series);
   animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.stage-body { display: flex; flex-direction: column; gap: 3px; }
-.stage-label { font-weight: 600; font-size: 15px; }
-.stage.active .stage-label { color: var(--ink); }
+.stage-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.stage-label { font-weight: 600; font-size: 16px; letter-spacing: -0.01em; }
+.wheel-item.active .stage-label { font-size: 19px; }
 .stage-detail { font-size: 13px; color: var(--ink-3); }
 
 .stage-badge {
   display: inline-flex; align-items: center; gap: 7px; margin-top: 6px;
-  padding: 4px 10px; border-radius: 999px; width: fit-content;
+  padding: 4px 11px; border-radius: 999px; width: fit-content;
   background: rgba(250, 178, 25, 0.1);
   border: 1px solid rgba(250, 178, 25, 0.35);
   font-size: 12px; color: var(--ink-2);
 }
 .stage-badge em {
   font-style: normal; font-family: "IBM Plex Mono", monospace;
-  color: var(--ink); padding-left: 7px; margin-left: 1px;
+  color: var(--ink); padding-left: 8px;
   border-left: 1px solid rgba(250, 178, 25, 0.35);
 }
 
 .run-actions {
-  display: flex; gap: 12px; margin-top: 28px; justify-content: center;
+  display: flex; gap: 12px; margin-top: 8px; justify-content: center;
   animation: hexFadeIn 0.5s ease both;
 }

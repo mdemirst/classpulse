@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 /** Butterbase mark — shown on the stages that run through their AI gateway. */
 function ButterbaseMark() {
   return (
-    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden>
+    <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden>
       <rect x="1" y="4" width="14" height="9" rx="2" fill="#fab219" />
       <path d="M1 6.5 L8 1.5 L15 6.5 Z" fill="#ffd77a" />
     </svg>
@@ -14,7 +14,6 @@ export interface StageSpec {
   key: string;
   label: string;
   detail: string;
-  /** shown as a provider chip under the stage */
   badge?: { model: string };
 }
 
@@ -39,73 +38,79 @@ export function buildStages(fileName: string, sizeMb: number, students: number):
   ];
 }
 
+const FINAL: StageSpec = {
+  key: "final",
+  label: "Reports are generated.",
+  detail: "Every student has a clip, a behavior timeline and a personalized report.",
+};
+
+const ITEM_H = 118;   // px, must match .wheel-item height in CSS
+const CENTER = 2;     // active row sits in the 3rd visible slot
+
 interface Props {
   stages: StageSpec[];
-  /** gate completion on real work; pass true when there is nothing to wait for */
+  /** gate the last step on the real work; true when there is nothing to wait for */
   ready: boolean;
   dwellMs?: number;
   onFinished?: () => void;
 }
 
-/**
- * Plays the pipeline stages as a timed sequence. The visual pace is fixed so it
- * reads well; the final stage only completes once the real work is `ready`.
- */
 export default function ProcessingStages({ stages, ready, dwellMs = 2000, onFinished }: Props) {
+  const items = [...stages, FINAL];
+  const finalIndex = items.length - 1;
   const [index, setIndex] = useState(0);
-  const [done, setDone] = useState(false);
+  const [announced, setAnnounced] = useState(false);
 
   useEffect(() => {
-    if (index >= stages.length) return;
-    const last = index === stages.length - 1;
-    if (last && !ready) return; // hold on the last stage until the work lands
+    if (index >= finalIndex) return;                       // final row is terminal
+    if (index === finalIndex - 1 && !ready) return;        // hold until work lands
     const timer = setTimeout(() => setIndex((i) => i + 1), dwellMs);
     return () => clearTimeout(timer);
-  }, [index, ready, stages.length, dwellMs]);
+  }, [index, ready, finalIndex, dwellMs]);
 
   useEffect(() => {
-    if (index >= stages.length && !done) {
-      setDone(true);
+    if (index === finalIndex && !announced) {
+      setAnnounced(true);
       onFinished?.();
     }
-  }, [index, stages.length, done, onFinished]);
+  }, [index, finalIndex, announced, onFinished]);
 
   return (
-    <div className="stages">
-      {stages.map((s, i) => {
-        const state = i < index ? "done" : i === index ? "active" : "pending";
-        return (
-          <div className={`stage ${state}`} key={s.key}>
-            <span className="stage-icon">
-              {state === "done" ? "✓" : state === "active" ? <span className="stage-spin" /> : ""}
-            </span>
-            <span className="stage-body">
-              <span className="stage-label">{s.label}</span>
-              <span className="stage-detail">{s.detail}</span>
-              {s.badge && (
-                <span className="stage-badge">
-                  <ButterbaseMark />
-                  Butterbase AI Gateway
-                  <em>{s.badge.model}</em>
-                </span>
-              )}
-            </span>
-          </div>
-        );
-      })}
-
-      <div className={`stage final ${done ? "done" : "pending"}`}>
-        <span className="stage-icon">{done ? "✓" : ""}</span>
-        <span className="stage-body">
-          <span className="stage-label">
-            {done ? "Reports are generated." : "Finishing up…"}
-          </span>
-          <span className="stage-detail">
-            {done
-              ? "Every student has a clip, a behavior timeline and a personalized report."
-              : "Writing results to Butterbase"}
-          </span>
-        </span>
+    <div className="wheel" role="status" aria-live="polite">
+      <div
+        className="wheel-track"
+        style={{ transform: `translateY(${(CENTER - index) * ITEM_H}px)` }}
+      >
+        {items.map((s, i) => {
+          const offset = i - index;
+          const state =
+            offset === 0 ? "active" : offset < 0 ? "done" : "pending";
+          const isFinal = i === finalIndex;
+          return (
+            <div
+              className={`wheel-item ${state} ${isFinal ? "final" : ""}`}
+              key={s.key}
+              style={{ "--dist": Math.min(Math.abs(offset), 3) } as React.CSSProperties}
+            >
+              <span className="stage-icon">
+                {state === "done" || (isFinal && state === "active") ? "✓"
+                  : state === "active" ? <span className="stage-spin" />
+                  : ""}
+              </span>
+              <span className="stage-body">
+                <span className="stage-label">{s.label}</span>
+                <span className="stage-detail">{s.detail}</span>
+                {s.badge && (
+                  <span className="stage-badge">
+                    <ButterbaseMark />
+                    Butterbase AI Gateway
+                    <em>{s.badge.model}</em>
+                  </span>
+                )}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
