@@ -4,6 +4,7 @@ import HexCell from "./HexCell";
 import PulseChart from "./PulseChart";
 import DistractionTimeline from "./DistractionTimeline";
 import { focusScore } from "../lib/focusScore";
+import { fivePointColor } from "../lib/ratingScale";
 import { scoreColor, initials } from "../lib/scores";
 import type { Student, StudentResult } from "../types";
 
@@ -17,6 +18,7 @@ interface Props {
   selected?: boolean;
   trendDelta?: number | null;
   reportCardHref?: string;
+  overallRating?: number | null;
 }
 
 export default function StudentHexCard({
@@ -29,6 +31,7 @@ export default function StudentHexCard({
   selected,
   trendDelta,
   reportCardHref,
+  overallRating,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const name = student?.name ?? "Unknown";
@@ -36,6 +39,8 @@ export default function StudentHexCard({
   const timeline = result.engagement_timeline?.items ?? [];
   const focus = focusScore(result.engagement_score, events, duration);
   const engColor = scoreColor(result.engagement_score);
+  const ratingColor = fivePointColor(overallRating ?? null);
+  const displayRating = overallRating ?? null;
   const focusColor = scoreColor(focus);
   const distColor = events.length > 0 ? "var(--serious)" : "var(--border)";
 
@@ -48,14 +53,21 @@ export default function StudentHexCard({
       >
         <HexCell
           size={64}
-          stroke={engColor}
+          stroke={displayRating !== null ? ratingColor : engColor}
           glow={highlight || selected}
           fill={selected ? "rgba(57,135,229,0.15)" : "var(--card)"}
         >
           <div className="hex-compact-inner">
             <span className="hex-compact-init">{initials(name)}</span>
-            <span className="hex-compact-score" style={{ color: engColor }}>
-              {result.engagement_score ?? "—"}
+            <span
+              className="hex-compact-score"
+              style={{ color: displayRating !== null ? ratingColor : engColor }}
+            >
+              {displayRating !== null ? (
+                <>{displayRating}<span className="hex-compact-denom">/5</span></>
+              ) : (
+                result.engagement_score ?? "—"
+              )}
             </span>
             <span className="hex-compact-name">{name.split(" ")[0]}</span>
           </div>

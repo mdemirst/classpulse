@@ -50,7 +50,7 @@ export default function StudentReport() {
   return (
     <div className="report-card-page">
       <div className="crumb no-print">
-        <Link to="/">← All classrooms</Link>
+        <Link to="/dashboard">← All classrooms</Link>
         {" · "}
         <Link to={`/classroom/${classroomId}`}>{profile.classroom.name}</Link>
         {" · "}

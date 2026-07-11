@@ -13,6 +13,7 @@ import TeacherPulsePanel from "../components/TeacherPulsePanel";
 import Trend from "../components/Trend";
 import { rows, row } from "../api";
 import { CHART, axisProps, tooltipStyle } from "../lib/chartTheme";
+import { buildStudentReportProfile } from "../lib/studentReportCard";
 import { classroomCoachingProfile } from "../lib/teacherCoaching";
 import {
   DIMENSIONS, dimensionOf, engagementOf as lessonEngagement,
@@ -75,6 +76,16 @@ export default function ClassroomPage() {
     });
   }, [students, lessons, results]);
 
+  const studentProfiles = useMemo(() => {
+    if (!classroom) return new Map<string, ReturnType<typeof buildStudentReportProfile>>();
+    return new Map(
+      students.map((student) => [
+        student.id,
+        buildStudentReportProfile(student, classroom, lessons, results, insights),
+      ]),
+    );
+  }, [classroom, students, lessons, results, insights]);
+
   const coachingProfile = useMemo(() => {
     if (!classroom) {
       return { cards: [], scoreTrend: [], latestScore: null, scoreDelta: null };
@@ -93,7 +104,7 @@ export default function ClassroomPage() {
 
   return (
     <>
-      <div className="crumb"><Link to="/">← All classrooms</Link></div>
+      <div className="crumb"><Link to="/dashboard">← All classrooms</Link></div>
       <h1>{classroom.name}</h1>
       <div className="sub">
         {classroom.teacher_name}
@@ -150,10 +161,11 @@ export default function ClassroomPage() {
       )}
 
       <h2 className="section-hex">Roster</h2>
-      <div className="sub section-desc">Click a student to open their report card</div>
+      <div className="sub section-desc">Click a student for their report card — overall performance & parent insights</div>
       <HoneycombGrid className="roster-honeycomb">
         {studentTrends.map(({ student, latest, delta, studentResults }, i) => {
           const latestResult = studentResults.at(-1)?.result;
+          const profile = studentProfiles.get(student.id);
           return (
             <div key={student.id} className="honeycomb-item" style={{ animationDelay: `${i * 35}ms` }}>
               <StudentHexCard
@@ -177,6 +189,7 @@ export default function ClassroomPage() {
                 duration={lessons.at(-1)?.duration_sec ?? 1800}
                 onSelect={() => navigate(`/classroom/${id}/student/${student.id}`)}
                 trendDelta={delta}
+                overallRating={profile?.overallRating ?? null}
               />
             </div>
           );

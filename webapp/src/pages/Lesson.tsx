@@ -64,7 +64,7 @@ export default function LessonPage() {
   return (
     <>
       <div className="crumb">
-        <Link to="/">← All classrooms</Link>
+        <Link to="/dashboard">← All classrooms</Link>
         {classroom && (
           <> · <Link to={`/classroom/${classroom.id}`}>{classroom.name}</Link></>
         )}

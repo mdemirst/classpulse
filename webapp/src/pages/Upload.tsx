@@ -94,7 +94,7 @@ export default function UploadPage() {
 
   return (
     <>
-      <div className="crumb"><Link to="/">← All classrooms</Link></div>
+      <div className="crumb"><Link to="/dashboard">← All classrooms</Link></div>
       <h1>Analyze a lesson</h1>
       <div className="sub">
         Pick a recorded lesson. ClassPulse finds every student, crops their clip,

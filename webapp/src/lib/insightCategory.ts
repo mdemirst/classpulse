@@ -41,10 +41,16 @@ export function categoryIcon(cat: InsightCategory): string {
 }
 
 export function insightActionPath(insight: Insight): string {
+  if (insight.scope === "student" && insight.student_id) {
+    return `/classroom/${insight.classroom_id}/student/${insight.student_id}`;
+  }
   return `/classroom/${insight.classroom_id}`;
 }
 
-export function insightActionLabel(_insight: Insight): string {
+export function insightActionLabel(insight: Insight): string {
+  if (insight.scope === "student" && insight.student_id) {
+    return "View report card";
+  }
   return "View in Classroom";
 }
 
