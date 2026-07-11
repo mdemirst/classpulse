@@ -1504,3 +1504,18 @@ button.hex-cell { cursor: pointer; }
   font-size: 12px; color: var(--ink-3); margin-top: 2px;
 }
 .video-roster { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+
+/* ══ Studio: full lesson video above the per-student clips ══ */
+.lesson-source { margin-top: 18px; }
+.lesson-source-head {
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+}
+.lesson-source-head .section-hex { margin: 0 0 8px; }
+.lesson-source-video {
+  background: #000; border: 1px solid var(--border); border-radius: 12px;
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
+  min-height: 200px;
+}
+.lesson-source-video video {
+  width: 100%; max-height: 420px; display: block;
+}

@@ -13,16 +13,21 @@ export default function Studio() {
   const [students, setStudents] = useState<Student[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [clipUrl, setClipUrl] = useState<string | null>(null);
+  const [lessonUrl, setLessonUrl] = useState<string | null>(null);
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
   const [currentTime, setCurrentTime] = useState(0);
   const [error, setError] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
+  const lessonVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     if (!id) return;
     row<Lesson>("lessons", id)
       .then(async (l) => {
         setLesson(l);
+        if (l.video_object_id) {
+          getDownloadUrl(l.video_object_id).then(setLessonUrl).catch(() => {});
+        }
         const [c, r, s] = await Promise.all([
           row<Classroom>("classrooms", l.classroom_id),
           rows<StudentResult>("student_results", `lesson_id=eq.${l.id}`),
@@ -61,10 +66,14 @@ export default function Studio() {
   const nameOf = (sid: string | null) =>
     students.find((s) => s.id === sid)?.name ?? "Unknown student";
 
+  /** Scrub the student clip and follow along in the full lesson video. */
   function seek(t: number) {
     if (videoRef.current) {
       videoRef.current.currentTime = t;
       setCurrentTime(t);
+    }
+    if (lessonVideoRef.current && active) {
+      lessonVideoRef.current.currentTime = (active.clip_start_sec ?? 0) + t;
     }
   }
 
@@ -82,6 +91,20 @@ export default function Studio() {
       <h1>{lesson.title} — student clips</h1>
       <div className="sub">
         {classroom?.name} · {withClips.length} students detected and analyzed
+      </div>
+
+      <div className="lesson-source">
+        <div className="lesson-source-head">
+          <span className="section-hex">Full lesson recording</span>
+          <span className="sub">source video · every clip below is cropped from it</span>
+        </div>
+        <div className="lesson-source-video">
+          {lessonUrl ? (
+            <video ref={lessonVideoRef} src={lessonUrl} controls />
+          ) : (
+            <div className="loading">Loading lesson video…</div>
+          )}
+        </div>
       </div>
 
       {withClips.length === 0 && (
