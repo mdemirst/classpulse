@@ -64,14 +64,24 @@ def smooth_frames(frames: list[TrackFrame], window: int = 9) -> list[TrackFrame]
 
 
 def crop_window(
-    frames: list[TrackFrame], frame_w: int, frame_h: int, pad: float = 0.15
+    frames: list[TrackFrame], frame_w: int, frame_h: int,
+    pad: float = 0.05, torso_frac: float = 0.7,
 ) -> list[int]:
-    """One fixed crop rect for a whole track: padded union of smoothed boxes."""
-    smoothed = smooth_frames(frames)
-    x1 = min(f.bbox[0] for f in smoothed)
-    y1 = min(f.bbox[1] for f in smoothed)
-    x2 = max(f.bbox[2] for f in smoothed)
-    y2 = max(f.bbox[3] for f in smoothed)
+    """One fixed crop rect for a whole track.
+
+    Median box (not union — union inflates with detection jitter and pulls in
+    neighbors), cut to the top `torso_frac` of the person (face+torso; the rest
+    is desk), then lightly padded.
+    """
+    def median(vals: list[int]) -> int:
+        s = sorted(vals)
+        return s[len(s) // 2]
+
+    x1 = median([f.bbox[0] for f in frames])
+    y1 = median([f.bbox[1] for f in frames])
+    x2 = median([f.bbox[2] for f in frames])
+    y2 = median([f.bbox[3] for f in frames])
+    y2 = y1 + round((y2 - y1) * torso_frac)
     pw, ph = pad * (x2 - x1), pad * (y2 - y1)
     x1, y1 = max(0, int(x1 - pw)), max(0, int(y1 - ph))
     x2, y2 = min(frame_w, int(x2 + pw)), min(frame_h, int(y2 + ph))

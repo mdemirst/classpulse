@@ -95,6 +95,8 @@ def detect_and_track(
     stride: int = 2,
     min_track_sec: float = 2.0,
     min_detections: int = 20,
+    pad: float = 0.05,
+    torso_frac: float = 0.7,
 ) -> TracksFile:
     from ultralytics import YOLO  # heavy import
 
@@ -113,7 +115,8 @@ def detect_and_track(
     tracks = [t for t in tracks
               if t.t_end - t.t_start >= min_track_sec and len(t.frames) >= min_detections]
     for t in tracks:
-        t.crop = crop_window(t.frames, frame_w=width, frame_h=height)
+        t.crop = crop_window(t.frames, frame_w=width, frame_h=height,
+                             pad=pad, torso_frac=torso_frac)
     return TracksFile(video=str(video_path), fps=fps, width=width,
                       height=height, tracks=tracks)
 

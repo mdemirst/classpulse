@@ -18,13 +18,15 @@ def _save_tracks(work_dir: Path, tracks: TracksFile) -> None:
 
 
 def run(video: Path, work_dir: Path, stage: str | None, model: str,
-        conf: float, stride: int, min_track_sec: float) -> None:
+        conf: float, stride: int, min_track_sec: float,
+        pad: float, torso_frac: float) -> None:
     stages = STAGES if stage is None else [stage]
 
     if "track" in stages:
         print(f"[track] {video} (model={model}, conf={conf}, stride={stride})")
         tracks = detect_and_track(video, model_name=model, conf=conf,
-                                  stride=stride, min_track_sec=min_track_sec)
+                                  stride=stride, min_track_sec=min_track_sec,
+                                  pad=pad, torso_frac=torso_frac)
         _save_tracks(work_dir, tracks)
         for t in tracks.tracks:
             print(f"[track] #{t.track_id}: {len(t.frames)} detections, "
@@ -53,6 +55,10 @@ def main() -> None:
     p.add_argument("--conf", type=float, default=0.35)
     p.add_argument("--stride", type=int, default=2, help="process every Nth frame")
     p.add_argument("--min-track-sec", type=float, default=2.0)
+    p.add_argument("--pad", type=float, default=0.05, help="crop padding fraction")
+    p.add_argument("--torso-frac", type=float, default=0.7,
+                   help="keep top fraction of person box (face+torso)")
     args = parser.parse_args()
     run(video=args.video, work_dir=args.work, stage=args.stage, model=args.model,
-        conf=args.conf, stride=args.stride, min_track_sec=args.min_track_sec)
+        conf=args.conf, stride=args.stride, min_track_sec=args.min_track_sec,
+        pad=args.pad, torso_frac=args.torso_frac)
