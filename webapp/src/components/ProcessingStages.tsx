@@ -136,7 +136,7 @@ interface Props {
 }
 
 export default function ProcessingStages({
-  stages, ready, dwellMs = 2200, onFinished, finalContent,
+  stages, ready, dwellMs = 5000, onFinished, finalContent,
 }: Props) {
   const items = [...stages, FINAL];
   const finalIndex = items.length - 1;
