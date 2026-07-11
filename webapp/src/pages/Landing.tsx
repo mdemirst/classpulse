@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import HexLogo from "../components/HexLogo";
+import ImprovementRadar from "../components/ImprovementRadar";
 import ProgressionGraph from "../components/ProgressionGraph";
 
 export default function Landing() {
@@ -54,7 +55,16 @@ export default function Landing() {
         </div>
 
         <div className="landing-hero-visual">
-          <ProgressionGraph />
+          <div className="landing-chart card glass">
+            <ImprovementRadar />
+          </div>
+          <div className="landing-chart card glass">
+            <div className="landing-chart-head">
+              <span className="landing-chart-title">Lesson after lesson</span>
+              <span className="landing-chart-sub">engagement compounds as coaching lands</span>
+            </div>
+            <ProgressionGraph />
+          </div>
         </div>
       </section>
     </div>

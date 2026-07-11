@@ -10,23 +10,23 @@ export default function ProgressionGraph() {
     >
       <defs>
         <linearGradient id="pg-blue" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#5aa0ff" stopOpacity="0.55" />
+          <stop offset="0%" stopColor="#3987e5" stopOpacity="0.55" />
           <stop offset="100%" stopColor="#3987e5" stopOpacity="0" />
         </linearGradient>
         <linearGradient id="pg-green" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#2dd42d" stopOpacity="0.5" />
+          <stop offset="0%" stopColor="#0ca30c" stopOpacity="0.5" />
           <stop offset="100%" stopColor="#0ca30c" stopOpacity="0" />
         </linearGradient>
         <linearGradient id="pg-amber" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffd04a" stopOpacity="0.45" />
+          <stop offset="0%" stopColor="#fab219" stopOpacity="0.45" />
           <stop offset="100%" stopColor="#fab219" stopOpacity="0" />
         </linearGradient>
         <linearGradient id="pg-coral" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ff9a6c" stopOpacity="0.45" />
+          <stop offset="0%" stopColor="#ec835a" stopOpacity="0.45" />
           <stop offset="100%" stopColor="#ec835a" stopOpacity="0" />
         </linearGradient>
         <linearGradient id="pg-violet" x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0%" stopColor="#9b7bff" stopOpacity="0.15" />
+          <stop offset="0%" stopColor="#9085e9" stopOpacity="0.15" />
           <stop offset="100%" stopColor="#3987e5" stopOpacity="0.05" />
         </linearGradient>
       </defs>
@@ -44,7 +44,7 @@ export default function ProgressionGraph() {
       <path
         className="progression-line line-blue"
         d="M40 240 C100 220, 140 200, 180 190 S260 150, 320 130 S400 100, 460 72"
-        stroke="#5aa0ff"
+        stroke="#3987e5"
         strokeWidth="4"
       />
 
@@ -55,7 +55,7 @@ export default function ProgressionGraph() {
       <path
         className="progression-line line-green"
         d="M40 260 C120 250, 160 220, 200 210 S280 170, 340 155 S410 140, 460 118"
-        stroke="#2dd42d"
+        stroke="#0ca30c"
         strokeWidth="4"
       />
 
@@ -66,7 +66,7 @@ export default function ProgressionGraph() {
       <path
         className="progression-line line-amber"
         d="M40 200 L100 175 L140 210 L200 160 L260 185 L320 120 L380 150 L460 95"
-        stroke="#ffd04a"
+        stroke="#fab219"
         strokeWidth="3.5"
         strokeLinejoin="round"
       />
@@ -74,18 +74,18 @@ export default function ProgressionGraph() {
       <path
         className="progression-line line-coral"
         d="M40 230 C80 225, 120 200, 160 215 S220 250, 280 200 S360 120, 460 88"
-        stroke="#ff9a6c"
+        stroke="#ec835a"
         strokeWidth="3.5"
         strokeDasharray="8 5"
       />
 
       {[
-        { cx: 180, cy: 190, c: "#5aa0ff" },
-        { cx: 320, cy: 130, c: "#5aa0ff" },
-        { cx: 460, cy: 72, c: "#5aa0ff" },
-        { cx: 260, cy: 185, c: "#ffd04a" },
-        { cx: 460, cy: 88, c: "#ff9a6c" },
-        { cx: 340, cy: 155, c: "#2dd42d" },
+        { cx: 180, cy: 190, c: "#3987e5" },
+        { cx: 320, cy: 130, c: "#3987e5" },
+        { cx: 460, cy: 72, c: "#3987e5" },
+        { cx: 260, cy: 185, c: "#fab219" },
+        { cx: 460, cy: 88, c: "#ec835a" },
+        { cx: 340, cy: 155, c: "#0ca30c" },
       ].map((n, i) => (
         <g key={i}>
           <circle cx={n.cx} cy={n.cy} r="14" fill={n.c} opacity="0.25" />
@@ -93,8 +93,8 @@ export default function ProgressionGraph() {
         </g>
       ))}
 
-      <circle className="progression-pulse" cx="460" cy="72" r="20" stroke="#5aa0ff" strokeWidth="2" opacity="0.6" />
-      <circle className="progression-pulse delay" cx="460" cy="88" r="16" stroke="#ff9a6c" strokeWidth="1.5" opacity="0.4" />
+      <circle className="progression-pulse" cx="460" cy="72" r="20" stroke="#3987e5" strokeWidth="2" opacity="0.6" />
+      <circle className="progression-pulse delay" cx="460" cy="88" r="16" stroke="#ec835a" strokeWidth="1.5" opacity="0.4" />
     </svg>
   );
 }

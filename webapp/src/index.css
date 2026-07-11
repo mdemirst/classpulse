@@ -941,7 +941,7 @@ button.hex-cell { cursor: pointer; }
   margin: 0 0 16px; max-width: 620px;
 }
 .landing-value b {
-  background: linear-gradient(135deg, #c4a8ff, #9b7bff);
+  background: linear-gradient(135deg, #b3abf0, #9085e9);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text; font-weight: 800;
 }
@@ -962,9 +962,9 @@ button.hex-cell { cursor: pointer; }
   margin: 0 0 28px; letter-spacing: -0.01em;
   text-transform: lowercase;
 }
-.tag-realtime { color: #ff9a6c; }
-.tag-inclass { color: #e85d9a; }
-.tag-deep { color: #9b7bff; }
+.tag-realtime { color: #ec835a; }
+.tag-inclass { color: #d55181; }
+.tag-deep { color: #9085e9; }
 
 .landing-title-vivid {
   font-size: clamp(52px, 8.5vw, 96px);
@@ -974,25 +974,25 @@ button.hex-cell { cursor: pointer; }
 }
 .landing-title-vivid .grad-blue,
 .landing-slogan .grad-blue {
-  background: linear-gradient(135deg, #7eb8ff, #3987e5);
+  background: linear-gradient(135deg, #6da7ec, #3987e5);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 .landing-slogan .grad-violet {
-  background: linear-gradient(135deg, #c4a8ff, #9b7bff);
+  background: linear-gradient(135deg, #b3abf0, #9085e9);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 .landing-title-vivid .grad-green {
-  background: linear-gradient(135deg, #5ef05e, #0ca30c);
+  background: linear-gradient(135deg, #2dbf2d, #0ca30c);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 .landing-title-vivid .grad-amber {
-  background: linear-gradient(135deg, #ffd04a, #f09000);
+  background: linear-gradient(135deg, #fab219, #c98500);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1021,7 +1021,7 @@ button.hex-cell { cursor: pointer; }
   box-shadow: 0 12px 36px rgba(90, 160, 255, 0.45);
 }
 .landing-cta.primary {
-  background: linear-gradient(135deg, #5aa0ff, #2563c7, #9b7bff);
+  background: linear-gradient(135deg, #3987e5, #256abf, #9085e9);
   color: white;
 }
 
@@ -1544,3 +1544,28 @@ button.hex-cell { cursor: pointer; }
 .lesson-source-video video {
   width: 100%; max-height: 420px; display: block;
 }
+
+/* ══ Landing charts ══ */
+.landing-hero-visual {
+  flex-direction: column; gap: 16px; width: 100%; max-width: 440px;
+}
+.landing-chart { padding: 16px 18px; width: 100%; }
+.landing-chart-head {
+  display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px;
+}
+.landing-chart-title { font-size: 14px; font-weight: 700; color: var(--ink); }
+.landing-chart-sub { font-size: 12px; color: var(--ink-3); }
+
+.landing-chart-legend {
+  display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px;
+  justify-content: center;
+}
+.landing-delta {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--ink-3);
+}
+.landing-delta b {
+  font-family: "IBM Plex Mono", monospace; font-size: 12px;
+  color: var(--good); font-weight: 700;
+}
+.landing-chart .progression-graph { width: 100%; height: auto; display: block; }
